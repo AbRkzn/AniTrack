@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#F7F9F4"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anitrack.app"
@@ -23,7 +25,10 @@
         "backgroundColor": "#2E7D32"
       },
       "package": "com.anitrack.app",
-      "permissions": ["NOTIFICATIONS", "ACCESS_NETWORK_STATE"]
+      "permissions": [
+        "NOTIFICATIONS",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -40,7 +45,8 @@
         {
           "photosPermission": "AniTrack needs access to your photos to attach crop and farm images."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
