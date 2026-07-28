@@ -14,15 +14,15 @@ function HarvestCard({ harvest }: { harvest: Harvest }) {
   return (
     <Card style={styles.harvestCard} padding={spacing.lg}>
       <View style={styles.harvestHeader}>
-        <Text style={styles.harvestDate}>?? {formatDate(harvest.harvestDate, 'MMM dd, yyyy')}</Text>
+        <Text style={styles.harvestDate}>{formatDate(harvest.harvestDate, 'MMM dd, yyyy')}</Text>
       </View>
       <View style={styles.harvestDetails}>
         <Text style={styles.harvestDetail}>Quantity: {harvest.quantity} {harvest.unit}</Text>
         {harvest.quality && <Text style={styles.harvestDetail}>Quality: {harvest.quality}</Text>}
         {harvest.buyer && <Text style={styles.harvestDetail}>Buyer: {harvest.buyer}</Text>}
-        {harvest.revenue > 0 && (
+        {(harvest.revenue ?? 0) > 0 && (
           <Text style={[styles.harvestDetail, { color: colors.light.primary, fontWeight: '600' }]}>
-            Revenue: {formatCurrency(harvest.revenue)}
+            Revenue: {formatCurrency(harvest.revenue ?? 0)}
           </Text>
         )}
       </View>
@@ -36,20 +36,22 @@ export default function HarvestsScreen() {
   const isLoading = useHarvestsStore((s) => s.harvests.isLoading);
   const totalQuantity = harvests.reduce((sum, h) => sum + h.quantity, 0);
   const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
+  const subtitle = `${harvests.length} records`;
+  const quantityValue = `${totalQuantity} kg`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title="Harvests" subtitle={${harvests.length} records} />
+      <Header title="Harvests" subtitle={subtitle} />
       <View style={styles.container}>
         <View style={styles.summaryRow}>
-          <StatCard title="Total Harvested" value={${totalQuantity} kg} icon="??" style={styles.summaryCard} />
-          <StatCard title="Revenue" value={formatCurrency(totalRevenue)} icon="??" color={colors.light.primary} style={styles.summaryCard} />
+          <StatCard title="Total Harvested" value={quantityValue} icon="🌾" style={styles.summaryCard} />
+          <StatCard title="Revenue" value={formatCurrency(totalRevenue)} icon="💰" color={colors.light.primary} style={styles.summaryCard} />
         </View>
         {harvests.length === 0 && !isLoading ? (
           <EmptyState
             title="No Harvest Records"
             message="Log your first harvest to start tracking yields."
-            icon="??"
+            icon="🌾"
           />
         ) : (
           <FlatList

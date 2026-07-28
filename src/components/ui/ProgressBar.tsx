@@ -12,6 +12,7 @@ interface ProgressBarProps {
 
 export function ProgressBar({ progress, color = colors.light.primary, height = 8, label, showPercentage = false }: ProgressBarProps) {
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
+  const widthPercent = `${clampedProgress}%`;
 
   return (
     <View style={styles.container}>
@@ -22,7 +23,7 @@ export function ProgressBar({ progress, color = colors.light.primary, height = 8
         </View>
       )}
       <View style={[styles.track, { height }]}>
-        <View style={[styles.fill, { width: ${clampedProgress}%, backgroundColor: color, height }]} />
+        <View style={[styles.fill, { width: widthPercent as any, backgroundColor: color, height }]} />
       </View>
     </View>
   );

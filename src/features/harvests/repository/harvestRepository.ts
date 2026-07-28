@@ -25,8 +25,8 @@ export class HarvestRepository {
     }
     sql += ' ORDER BY harvestDate DESC';
     if (query?.limit) {
-      sql +=  LIMIT ;
-      if (query.offset) sql +=  OFFSET ;
+      sql += ` LIMIT ${query.limit}`;
+      if (query.offset) sql += ` OFFSET ${query.offset}`;
     }
 
     const rows = await queryAll<any>(sql, params);
@@ -40,7 +40,7 @@ export class HarvestRepository {
 
   async create(data: Omit<Harvest, 'id' | 'createdAt' | 'updatedAt'>): Promise<Harvest> {
     const now = new Date().toISOString();
-    const id = harv__;
+    const id = `harv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const photos = JSON.stringify(data.photos || []);
 
     await executeSql(
@@ -63,10 +63,10 @@ export class HarvestRepository {
     for (const field of fields) {
       if (data[field] !== undefined) {
         if (field === 'photos') {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(JSON.stringify(data[field]));
         } else {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field]);
         }
       }
@@ -81,7 +81,7 @@ export class HarvestRepository {
     updates.push('updatedAt = ?');
     params.push(now, id);
 
-    await executeSql(UPDATE harvests SET  WHERE id = ?, params);
+    await executeSql(`UPDATE harvests SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const harvest = await this.getById(id);
     if (!harvest) throw new Error('Failed to update harvest');

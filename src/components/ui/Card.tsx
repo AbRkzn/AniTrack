@@ -4,7 +4,7 @@ import { colors, typography, borderRadius, spacing, shadows } from '../../consta
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: any;
   onPress?: () => void;
   padding?: number;
   margin?: number;

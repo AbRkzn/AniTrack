@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import { colors, typography } from '../../constants/theme';
 import { Platform } from 'react-native';
 
-function TabIcon({ icon }: { icon: string; color?: string }) {
+function TabIcon({ icon }: { icon: string }) {
   return <Text style={{ fontSize: 22 }}>{icon}</Text>;
 }
 
@@ -32,35 +32,35 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <TabIcon icon="??" color={color} />,
+          tabBarIcon: () => <TabIcon icon="🏠" />,
         }}
       />
       <Tabs.Screen
         name="crops"
         options={{
           title: 'Crops',
-          tabBarIcon: ({ color }) => <TabIcon icon="??" color={color} />,
+          tabBarIcon: () => <TabIcon icon="🌱" />,
         }}
       />
       <Tabs.Screen
         name="harvests"
         options={{
           title: 'Harvests',
-          tabBarIcon: ({ color }) => <TabIcon icon="??" color={color} />,
+          tabBarIcon: () => <TabIcon icon="🌾" />,
         }}
       />
       <Tabs.Screen
         name="expenses"
         options={{
           title: 'Expenses',
-          tabBarIcon: ({ color }) => <TabIcon icon="??" color={color} />,
+          tabBarIcon: () => <TabIcon icon="💰" />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <TabIcon icon="??" color={color} />,
+          tabBarIcon: () => <TabIcon icon="⚙️" />,
         }}
       />
     </Tabs>

@@ -29,8 +29,8 @@ export class FertilizerRepository {
     }
     sql += ' ORDER BY scheduledDate ASC';
     if (query?.limit) {
-      sql +=  LIMIT ;
-      if (query.offset) sql +=  OFFSET ;
+      sql += ` LIMIT ${query.limit}`;
+      if (query.offset) sql += ` OFFSET ${query.offset}`;
     }
 
     const rows = await queryAll<any>(sql, params);
@@ -44,7 +44,7 @@ export class FertilizerRepository {
 
   async create(data: Omit<FertilizerApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<FertilizerApplication> {
     const now = new Date().toISOString();
-    const id = ert__;
+    const id = `fert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await executeSql(
       'INSERT INTO fertilizer_schedules (id, cropId, fertilizerName, fertilizerType, applicationMethod, amountPerUnit, totalAmount, unit, scheduledDate, completedDate, status, notes, reminderEnabled, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -66,10 +66,10 @@ export class FertilizerRepository {
     for (const field of fields) {
       if (data[field] !== undefined) {
         if (field === 'reminderEnabled') {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field] ? 1 : 0);
         } else {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field]);
         }
       }
@@ -84,7 +84,7 @@ export class FertilizerRepository {
     updates.push('updatedAt = ?');
     params.push(now, id);
 
-    await executeSql(UPDATE fertilizer_schedules SET  WHERE id = ?, params);
+    await executeSql(`UPDATE fertilizer_schedules SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const app = await this.getById(id);
     if (!app) throw new Error('Failed to update fertilizer schedule');

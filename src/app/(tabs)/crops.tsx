@@ -8,7 +8,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { FAB } from '../../components/ui/FAB';
-import { colors, typography, spacing, borderRadius } from '../../constants/theme';
+import { colors, typography, spacing } from '../../constants/theme';
 import { getGrowthProgress, formatDate, getStatusColor } from '../../utils/helpers';
 import { Crop } from '../../types';
 
@@ -25,9 +25,8 @@ function CropCard({ crop }: { crop: Crop }) {
         <StatusBadge status={crop.status} />
       </View>
       <View style={styles.cropDetails}>
-        <Text style={styles.cropDetail}>?? {crop.fieldLocation || 'No location'}</Text>
-        <Text style={styles.cropDetail}>?? Planted: {formatDate(crop.plantingDate, 'MMM dd, yyyy')}</Text>
-        <Text style={styles.cropDetail}>?? Harvest: {formatDate(crop.expectedHarvestDate, 'MMM dd, yyyy')}</Text>
+        <Text style={styles.cropDetail}>Planted: {formatDate(crop.plantingDate, 'MMM dd, yyyy')}</Text>
+        <Text style={styles.cropDetail}>Harvest: {formatDate(crop.expectedHarvestDate, 'MMM dd, yyyy')}</Text>
       </View>
       <ProgressBar
         progress={progress}
@@ -42,17 +41,17 @@ function CropCard({ crop }: { crop: Crop }) {
 export default function CropsScreen() {
   const crops = useCropsStore((s) => s.crops.data);
   const isLoading = useCropsStore((s) => s.crops.isLoading);
+  const subtitle = `${crops.length} total`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title="Crops" subtitle={${crops.length} total} />
+      <Header title="Crops" subtitle={subtitle} />
       <View style={styles.container}>
         {crops.length === 0 && !isLoading ? (
           <EmptyState
             title="No Crops Added Yet"
             message="Start tracking your crops by adding your first one."
-            icon="??"
-            action={<FAB icon="+" onPress={() => {}} label="Add Crop" />}
+            icon="🌱"
           />
         ) : (
           <FlatList

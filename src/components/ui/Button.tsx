@@ -34,26 +34,29 @@ export function Button({
   textStyle,
   fullWidth = false,
 }: ButtonProps) {
-  const buttonStyles = [
-    styles.base,
-    styles[variant],
-    styles[size_],
-    fullWidth && styles.fullWidth,
-    disabled && styles.disabled,
-    style,
-  ];
+  const variantStyle = variant === 'primary' ? styles.primary
+    : variant === 'secondary' ? styles.secondary
+    : variant === 'outline' ? styles.outline
+    : variant === 'ghost' ? styles.ghost
+    : styles.danger;
 
-  const textStyles = [
-    styles.text,
-    styles[	ext_],
-    styles[	extSize_],
-    disabled && styles.textDisabled,
-    textStyle,
-  ];
+  const sizeStyle = size === 'small' ? styles.size_small
+    : size === 'large' ? styles.size_large
+    : styles.size_medium;
+
+  const textSize = size === 'small' ? styles.textSize_small
+    : size === 'large' ? styles.textSize_large
+    : styles.textSize_medium;
+
+  const textColor = variant === 'primary' || variant === 'danger'
+    ? styles.text_primary
+    : variant === 'secondary' ? styles.text_secondary
+    : variant === 'outline' ? styles.text_outline
+    : styles.text_ghost;
 
   return (
     <TouchableOpacity
-      style={buttonStyles}
+      style={[styles.base, variantStyle, sizeStyle, fullWidth && styles.fullWidth, disabled && styles.disabled, style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
@@ -66,7 +69,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text style={textStyles}>{title}</Text>
+          <Text style={[styles.text, textColor, textSize, disabled && styles.textDisabled, textStyle]}>{title}</Text>
         </>
       )}
     </TouchableOpacity>

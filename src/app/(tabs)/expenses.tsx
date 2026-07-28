@@ -35,20 +35,22 @@ export default function ExpensesScreen() {
   const expenses = useExpensesStore((s) => s.expenses.data);
   const isLoading = useExpensesStore((s) => s.expenses.isLoading);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const categoryCount = new Set(expenses.map((e) => e.category)).size.toString();
+  const subtitle = `${expenses.length} records`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title="Expenses" subtitle={${expenses.length} records} />
+      <Header title="Expenses" subtitle={subtitle} />
       <View style={styles.container}>
         <View style={styles.summaryRow}>
-          <StatCard title="Total Expenses" value={formatCurrency(totalExpenses)} icon="??" color={colors.light.error} style={styles.summaryCard} />
-          <StatCard title="Categories" value={new Set(expenses.map((e) => e.category)).size.toString()} icon="??" style={styles.summaryCard} />
+          <StatCard title="Total Expenses" value={formatCurrency(totalExpenses)} icon="💸" color={colors.light.error} style={styles.summaryCard} />
+          <StatCard title="Categories" value={categoryCount} icon="📊" style={styles.summaryCard} />
         </View>
         {expenses.length === 0 && !isLoading ? (
           <EmptyState
             title="No Expenses Logged"
             message="Track your farm expenses by adding your first entry."
-            icon="??"
+            icon="💰"
           />
         ) : (
           <FlatList

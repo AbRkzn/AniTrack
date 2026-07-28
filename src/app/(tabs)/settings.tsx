@@ -31,6 +31,8 @@ export default function SettingsScreen() {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const isOnline = useAppStore((s) => s.isOnline);
+  const reminderText = `${settings.reminderDaysBeforeHarvest} days before`;
+  const backupText = `Every ${settings.backupIntervalDays} days`;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -41,17 +43,17 @@ export default function SettingsScreen() {
           <SettingRow
             label="Theme"
             value={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
-            icon="??"
+            icon="🎨"
           />
           <SettingRow
             label="Currency"
             value={settings.currency}
-            icon="??"
+            icon="💵"
           />
           <SettingRow
             label="Unit System"
             value={settings.unitSystem.charAt(0).toUpperCase() + settings.unitSystem.slice(1)}
-            icon="??"
+            icon="📏"
           />
         </Card>
 
@@ -59,7 +61,7 @@ export default function SettingsScreen() {
         <Card style={styles.sectionCard} padding={spacing.xs}>
           <SettingRow
             label="Push Notifications"
-            icon="??"
+            icon="🔔"
             right={
               <Switch
                 value={settings.pushNotifications}
@@ -70,8 +72,8 @@ export default function SettingsScreen() {
           />
           <SettingRow
             label="Harvest Reminder"
-            value={${settings.reminderDaysBeforeHarvest} days before}
-            icon="?"
+            value={reminderText}
+            icon="⏰"
           />
         </Card>
 
@@ -79,7 +81,7 @@ export default function SettingsScreen() {
         <Card style={styles.sectionCard} padding={spacing.xs}>
           <SettingRow
             label="Auto Backup"
-            icon="??"
+            icon="💾"
             right={
               <Switch
                 value={settings.autoBackup}
@@ -90,12 +92,12 @@ export default function SettingsScreen() {
           />
           <SettingRow
             label="Backup Interval"
-            value={Every  days}
-            icon="??"
+            value={backupText}
+            icon="🔄"
           />
           <SettingRow
             label="Sync on WiFi Only"
-            icon="??"
+            icon="📶"
             right={
               <Switch
                 value={settings.syncOnWifiOnly}
@@ -108,11 +110,11 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>About</Text>
         <Card style={styles.sectionCard} padding={spacing.xs}>
-          <SettingRow label="App Version" value="1.0.0" icon="??" />
+          <SettingRow label="App Version" value="1.0.0" icon="📱" />
           <SettingRow
             label="Offline Status"
             value={isOnline ? 'Online' : 'Offline'}
-            icon="??"
+            icon="🌐"
           />
         </Card>
       </ScrollView>

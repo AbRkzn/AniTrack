@@ -1,6 +1,5 @@
 import { Crop, CropQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
-import { v4 as uuidv4 } from 'uuid';
 
 export class CropRepository {
   async getAll(query?: CropQuery): Promise<Crop[]> {
@@ -15,7 +14,7 @@ export class CropRepository {
 
     if (query?.search) {
       conditions.push('(name LIKE ? OR variety LIKE ? OR fieldLocation LIKE ?)');
-      const search = %%;
+      const search = `%${query.search}%`;
       params.push(search, search, search);
     }
 
@@ -24,14 +23,14 @@ export class CropRepository {
     }
 
     if (query?.orderBy) {
-      sql +=  ORDER BY  ;
+      sql += ` ORDER BY ${query.orderBy} ${query.orderDir || 'ASC'}`;
     } else {
       sql += ' ORDER BY createdAt DESC';
     }
 
     if (query?.limit) {
-      sql +=  LIMIT ;
-      if (query.offset) sql +=  OFFSET ;
+      sql += ` LIMIT ${query.limit}`;
+      if (query.offset) sql += ` OFFSET ${query.offset}`;
     }
 
     const rows = await queryAll<any>(sql, params);
@@ -45,7 +44,7 @@ export class CropRepository {
 
   async create(data: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>): Promise<Crop> {
     const now = new Date().toISOString();
-    const id = crop__;
+    const id = `crop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const photos = JSON.stringify(data.photos || []);
 
     await executeSql(
@@ -72,10 +71,10 @@ export class CropRepository {
     for (const field of fields) {
       if (data[field] !== undefined) {
         if (field === 'photos') {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(JSON.stringify(data[field]));
         } else {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field]);
         }
       }
@@ -91,7 +90,7 @@ export class CropRepository {
     params.push(now);
     params.push(id);
 
-    await executeSql(UPDATE crops SET  WHERE id = ?, params);
+    await executeSql(`UPDATE crops SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const crop = await this.getById(id);
     if (!crop) throw new Error('Failed to update crop');

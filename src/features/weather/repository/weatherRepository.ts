@@ -42,7 +42,7 @@ export class WeatherRepository {
       return this.mapRowToWeather(row!);
     }
 
-    const id = weather__;
+    const id = `weather_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await executeSql(
       'INSERT INTO weather_cache (id, date, temperatureHigh, temperatureLow, precipitation, humidity, windSpeed, conditions, location, dataSource, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [id, data.date, data.temperatureHigh, data.temperatureLow, data.precipitation, data.humidity, data.windSpeed, data.conditions, data.location || '', data.dataSource || 'manual', now]

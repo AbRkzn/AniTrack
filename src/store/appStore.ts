@@ -68,7 +68,7 @@ export const useAppStore = create<AppUIState>()(
     },
 
     addSyncQueueItem: async (item) => {
-      const id = sync__;
+      const id = `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = new Date().toISOString();
       const queueItem: SyncQueueItem = { ...item, id, createdAt: now, updatedAt: now };
       set((state) => ({ syncQueue: [...state.syncQueue, queueItem] }));

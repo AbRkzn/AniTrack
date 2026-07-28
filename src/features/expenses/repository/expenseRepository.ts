@@ -29,8 +29,8 @@ export class ExpenseRepository {
     }
     sql += ' ORDER BY date DESC';
     if (query?.limit) {
-      sql +=  LIMIT ;
-      if (query.offset) sql +=  OFFSET ;
+      sql += ` LIMIT ${query.limit}`;
+      if (query.offset) sql += ` OFFSET ${query.offset}`;
     }
 
     const rows = await queryAll<any>(sql, params);
@@ -44,7 +44,7 @@ export class ExpenseRepository {
 
   async create(data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>): Promise<Expense> {
     const now = new Date().toISOString();
-    const id = exp__;
+    const id = `exp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await executeSql(
       'INSERT INTO expenses (id, cropId, category, amount, currency, date, vendor, receiptPhoto, notes, recurring, recurringInterval, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -66,10 +66,10 @@ export class ExpenseRepository {
     for (const field of fields) {
       if (data[field] !== undefined) {
         if (field === 'recurring') {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field] ? 1 : 0);
         } else {
-          updates.push(${field} = ?);
+          updates.push(`${field} = ?`);
           params.push(data[field]);
         }
       }
@@ -84,7 +84,7 @@ export class ExpenseRepository {
     updates.push('updatedAt = ?');
     params.push(now, id);
 
-    await executeSql(UPDATE expenses SET  WHERE id = ?, params);
+    await executeSql(`UPDATE expenses SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const expense = await this.getById(id);
     if (!expense) throw new Error('Failed to update expense');

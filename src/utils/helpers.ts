@@ -42,7 +42,7 @@ export function getMonthRange(monthsBack: number = 0): { start: string; end: str
 export function generateId(prefix: string = ''): string {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substr(2, 9);
-  return prefix ? ${prefix}__ : ${timestamp}_;
+  return prefix ? `${prefix}_${timestamp}_${random}` : `${timestamp}_${random}`;
 }
 
 export function getGrowthProgress(plantingDate: string, expectedHarvestDate: string): number {
@@ -82,36 +82,36 @@ export function getStatusLabel(status: string): string {
 
 export function getCategoryIcon(category: string): string {
   const icons: Record<string, string> = {
-    seed: '??',
-    fertilizer: '??',
-    pesticide: '??',
-    equipment: '??',
-    labor: '??',
-    irrigation: '??',
-    fuel: '?',
-    maintenance: '??',
-    transport: '??',
-    utility: '?',
-    insurance: '???',
-    rent: '??',
-    other: '??',
+    seed: '🌱',
+    fertilizer: '🧪',
+    pesticide: '🐛',
+    equipment: '⚙️',
+    labor: '👷',
+    irrigation: '💧',
+    fuel: '⛽',
+    maintenance: '🔧',
+    transport: '🚛',
+    utility: '⚡',
+    insurance: '🛡️',
+    rent: '🏠',
+    other: '📦',
   };
-  return icons[category] || '??';
+  return icons[category] || '📦';
 }
 
 export function getWeatherIcon(condition: string): string {
   const icons: Record<string, string> = {
-    clear: '??',
-    partly_cloudy: '?',
-    cloudy: '??',
-    rain: '???',
-    heavy_rain: '??',
-    thunderstorm: '??',
-    snow: '??',
-    fog: '???',
-    wind: '??',
+    clear: '☀️',
+    partly_cloudy: '⛅',
+    cloudy: '☁️',
+    rain: '🌧️',
+    heavy_rain: '⛈️',
+    thunderstorm: '⛈️',
+    snow: '❄️',
+    fog: '🌫️',
+    wind: '💨',
   };
-  return icons[condition] || '??';
+  return icons[condition] || '☀️';
 }
 
 export function truncateText(text: string, maxLength: number): string {

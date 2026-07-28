@@ -14,7 +14,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
   await database.execAsync('PRAGMA journal_mode = WAL;');
   await database.execAsync('PRAGMA foreign_keys = ON;');
 
-  await database.execAsync(\
+  const schema = `
     CREATE TABLE IF NOT EXISTS crops (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -31,7 +31,6 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     );
-
     CREATE TABLE IF NOT EXISTS harvests (
       id TEXT PRIMARY KEY,
       cropId TEXT NOT NULL,
@@ -49,7 +48,6 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       updatedAt TEXT NOT NULL,
       FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE CASCADE
     );
-
     CREATE TABLE IF NOT EXISTS expenses (
       id TEXT PRIMARY KEY,
       cropId TEXT,
@@ -66,7 +64,6 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       updatedAt TEXT NOT NULL,
       FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE SET NULL
     );
-
     CREATE TABLE IF NOT EXISTS fertilizer_schedules (
       id TEXT PRIMARY KEY,
       cropId TEXT NOT NULL,
@@ -85,7 +82,6 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       updatedAt TEXT NOT NULL,
       FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE CASCADE
     );
-
     CREATE TABLE IF NOT EXISTS weather_cache (
       id TEXT PRIMARY KEY,
       date TEXT NOT NULL,
@@ -97,9 +93,9 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       conditions TEXT NOT NULL DEFAULT 'clear',
       location TEXT NOT NULL DEFAULT '',
       dataSource TEXT NOT NULL DEFAULT 'cache',
+      notes TEXT NOT NULL DEFAULT '',
       createdAt TEXT NOT NULL
     );
-
     CREATE TABLE IF NOT EXISTS notifications (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -110,12 +106,10 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       channel TEXT NOT NULL DEFAULT 'general',
       createdAt TEXT NOT NULL
     );
-
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
-
     CREATE TABLE IF NOT EXISTS backup_history (
       id TEXT PRIMARY KEY,
       filename TEXT NOT NULL,
@@ -126,7 +120,6 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       status TEXT NOT NULL DEFAULT 'completed',
       fileUri TEXT
     );
-
     CREATE TABLE IF NOT EXISTS sync_queue (
       id TEXT PRIMARY KEY,
       table_name TEXT NOT NULL,
@@ -139,7 +132,9 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     );
-  \);
+  `;
+
+  await database.execAsync(schema);
 }
 
 export async function closeDatabase(): Promise<void> {
@@ -158,14 +153,21 @@ export async function executeSql(sql: string, params?: any[]): Promise<void> {
   }
 }
 
-export async function queryAll<T>(sql: string, params?: any[]): Promise<T[]> {
+export async function queryAll<T>(sql: string, params: any[] = []): Promise<T[]> {
   const database = await getDatabase();
-  const result = await database.getAllAsync<T>(sql, params);
-  return result;
+  if (params.length > 0) {
+    return await database.getAllAsync<T>(sql, params);
+  }
+  return await database.getAllAsync<T>(sql);
 }
 
-export async function queryFirst<T>(sql: string, params?: any[]): Promise<T | null> {
+export async function queryFirst<T>(sql: string, params: any[] = []): Promise<T | null> {
   const database = await getDatabase();
-  const result = await database.getFirstAsync<T>(sql, params);
+  let result: T | null;
+  if (params.length > 0) {
+    result = await database.getFirstAsync<T>(sql, params);
+  } else {
+    result = await database.getFirstAsync<T>(sql);
+  }
   return result || null;
 }
