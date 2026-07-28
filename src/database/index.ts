@@ -1,0 +1,171 @@
+import * as SQLite from 'expo-sqlite';
+
+let db: SQLite.SQLiteDatabase | null = null;
+
+export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (!db) {
+    db = await SQLite.openDatabaseAsync('anitrack.db');
+    await initializeDatabase(db);
+  }
+  return db;
+}
+
+async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void> {
+  await database.execAsync('PRAGMA journal_mode = WAL;');
+  await database.execAsync('PRAGMA foreign_keys = ON;');
+
+  await database.execAsync(\
+    CREATE TABLE IF NOT EXISTS crops (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      variety TEXT NOT NULL DEFAULT '',
+      fieldLocation TEXT NOT NULL DEFAULT '',
+      plantingDate TEXT NOT NULL,
+      expectedHarvestDate TEXT NOT NULL,
+      actualHarvestDate TEXT,
+      status TEXT NOT NULL DEFAULT 'growing',
+      notes TEXT NOT NULL DEFAULT '',
+      photos TEXT NOT NULL DEFAULT '[]',
+      yieldEstimate REAL NOT NULL DEFAULT 0,
+      yieldUnit TEXT NOT NULL DEFAULT 'kg',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS harvests (
+      id TEXT PRIMARY KEY,
+      cropId TEXT NOT NULL,
+      harvestDate TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT 'kg',
+      quality TEXT,
+      moistureContent REAL,
+      photos TEXT NOT NULL DEFAULT '[]',
+      notes TEXT NOT NULL DEFAULT '',
+      sellingPrice REAL NOT NULL DEFAULT 0,
+      buyer TEXT,
+      revenue REAL NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS expenses (
+      id TEXT PRIMARY KEY,
+      cropId TEXT,
+      category TEXT NOT NULL DEFAULT 'other',
+      amount REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      date TEXT NOT NULL,
+      vendor TEXT,
+      receiptPhoto TEXT,
+      notes TEXT NOT NULL DEFAULT '',
+      recurring INTEGER NOT NULL DEFAULT 0,
+      recurringInterval TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS fertilizer_schedules (
+      id TEXT PRIMARY KEY,
+      cropId TEXT NOT NULL,
+      fertilizerName TEXT NOT NULL,
+      fertilizerType TEXT NOT NULL DEFAULT 'compound',
+      applicationMethod TEXT NOT NULL DEFAULT 'broadcast',
+      amountPerUnit REAL NOT NULL DEFAULT 0,
+      totalAmount REAL NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT 'kg',
+      scheduledDate TEXT NOT NULL,
+      completedDate TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      notes TEXT NOT NULL DEFAULT '',
+      reminderEnabled INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS weather_cache (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      temperatureHigh REAL NOT NULL DEFAULT 0,
+      temperatureLow REAL NOT NULL DEFAULT 0,
+      precipitation REAL NOT NULL DEFAULT 0,
+      humidity REAL NOT NULL DEFAULT 0,
+      windSpeed REAL NOT NULL DEFAULT 0,
+      conditions TEXT NOT NULL DEFAULT 'clear',
+      location TEXT NOT NULL DEFAULT '',
+      dataSource TEXT NOT NULL DEFAULT 'cache',
+      createdAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      data TEXT,
+      scheduledAt TEXT,
+      read INTEGER NOT NULL DEFAULT 0,
+      channel TEXT NOT NULL DEFAULT 'general',
+      createdAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS backup_history (
+      id TEXT PRIMARY KEY,
+      filename TEXT NOT NULL,
+      sizeBytes INTEGER NOT NULL DEFAULT 0,
+      recordCount INTEGER NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'manual',
+      status TEXT NOT NULL DEFAULT 'completed',
+      fileUri TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id TEXT PRIMARY KEY,
+      table_name TEXT NOT NULL,
+      recordId TEXT NOT NULL,
+      operation TEXT NOT NULL,
+      payload TEXT NOT NULL DEFAULT '{}',
+      status TEXT NOT NULL DEFAULT 'pending',
+      retryCount INTEGER NOT NULL DEFAULT 0,
+      lastError TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+  \);
+}
+
+export async function closeDatabase(): Promise<void> {
+  if (db) {
+    await db.closeAsync();
+    db = null;
+  }
+}
+
+export async function executeSql(sql: string, params?: any[]): Promise<void> {
+  const database = await getDatabase();
+  if (params && params.length > 0) {
+    await database.runAsync(sql, params);
+  } else {
+    await database.execAsync(sql);
+  }
+}
+
+export async function queryAll<T>(sql: string, params?: any[]): Promise<T[]> {
+  const database = await getDatabase();
+  const result = await database.getAllAsync<T>(sql, params);
+  return result;
+}
+
+export async function queryFirst<T>(sql: string, params?: any[]): Promise<T | null> {
+  const database = await getDatabase();
+  const result = await database.getFirstAsync<T>(sql, params);
+  return result || null;
+}
