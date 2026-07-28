@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
-import { Crop, CropStatus, CropQuery, AsyncState } from '../types';
+import { Crop, CropQuery, AsyncState } from '../types';
 import { CropRepository } from '../features/crops/repository/cropRepository';
 
 interface CropsState {
@@ -20,104 +19,66 @@ interface CropsState {
 
 const cropRepository = new CropRepository();
 
-export const useCropsStore = create<CropsState>()(
-  subscribeWithSelector((set, get) => ({
-    crops: { data: [], isLoading: false, error: null },
-    selectedCrop: null,
-    filters: {},
+export const useCropsStore = create<CropsState>((set, get) => ({
+  crops: { data: [], isLoading: false, error: null },
+  selectedCrop: null,
+  filters: {},
 
-    fetchCrops: async () => {
+  fetchCrops: async () => {
+    set((state) => ({ crops: { ...state.crops, isLoading: true, error: null } }));
+    try {
+      const data = await cropRepository.getAll(get().filters);
+      set({ crops: { data, isLoading: false, error: null } });
+    } catch (error) {
+      set({ crops: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch crops' } });
+    }
+  },
+
+  getCropById: async (id) => {
+    try { return await cropRepository.getById(id); } catch { return null; }
+  },
+
+  addCrop: async (cropData) => {
+    try {
+      const newCrop = await cropRepository.create(cropData);
+      set((state) => ({ crops: { ...state.crops, data: [...state.crops.data, newCrop] } }));
+      return newCrop;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to add crop';
+      set((state) => ({ crops: { ...state.crops, error: message } }));
+      throw error;
+    }
+  },
+
+  updateCrop: async (id, data) => {
+    try {
+      const updatedCrop = await cropRepository.update(id, data);
       set((state) => ({
-        crops: { ...state.crops, isLoading: true, error: null },
+        crops: { ...state.crops, data: state.crops.data.map((c) => (c.id === id ? updatedCrop : c)) },
       }));
-      try {
-        const data = await cropRepository.getAll(get().filters);
-        set({ crops: { data, isLoading: false, error: null } });
-      } catch (error) {
-        set({ crops: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch crops' } });
-      }
-    },
+      if (get().selectedCrop?.id === id) set({ selectedCrop: updatedCrop });
+      return updatedCrop;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update crop';
+      set((state) => ({ crops: { ...state.crops, error: message } }));
+      throw error;
+    }
+  },
 
-    getCropById: async (id: string) => {
-      try {
-        return await cropRepository.getById(id);
-      } catch (error) {
-        console.error('Error fetching crop:', error);
-        return null;
-      }
-    },
+  deleteCrop: async (id) => {
+    try {
+      await cropRepository.delete(id);
+      set((state) => ({ crops: { ...state.crops, data: state.crops.data.filter((c) => c.id !== id) } }));
+      if (get().selectedCrop?.id === id) set({ selectedCrop: null });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete crop';
+      set((state) => ({ crops: { ...state.crops, error: message } }));
+      throw error;
+    }
+  },
 
-    addCrop: async (cropData) => {
-      try {
-        const newCrop = await cropRepository.create(cropData);
-        set((state) => ({
-          crops: { ...state.crops, data: [...state.crops.data, newCrop] },
-        }));
-        return newCrop;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to add crop';
-        set((state) => ({
-          crops: { ...state.crops, error: message },
-        }));
-        throw error;
-      }
-    },
-
-    updateCrop: async (id, data) => {
-      try {
-        const updatedCrop = await cropRepository.update(id, data);
-        set((state) => ({
-          crops: {
-            ...state.crops,
-            data: state.crops.data.map((c) => (c.id === id ? updatedCrop : c)),
-          },
-        }));
-        if (get().selectedCrop?.id === id) {
-          set({ selectedCrop: updatedCrop });
-        }
-        return updatedCrop;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update crop';
-        set((state) => ({
-          crops: { ...state.crops, error: message },
-        }));
-        throw error;
-      }
-    },
-
-    deleteCrop: async (id) => {
-      try {
-        await cropRepository.delete(id);
-        set((state) => ({
-          crops: {
-            ...state.crops,
-            data: state.crops.data.filter((c) => c.id !== id),
-          },
-        }));
-        if (get().selectedCrop?.id === id) {
-          set({ selectedCrop: null });
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to delete crop';
-        set((state) => ({
-          crops: { ...state.crops, error: message },
-        }));
-        throw error;
-      }
-    },
-
-    setSelectedCrop: (crop) => set({ selectedCrop: crop }),
-
-    setFilters: (filters) =>
-      set((state) => ({
-        filters: { ...state.filters, ...filters },
-      })),
-
-    clearFilters: () => set({ filters: {} }),
-
-    clearError: () =>
-      set((state) => ({
-        crops: { ...state.crops, error: null },
-      })),
-  }))
-);
+  setSelectedCrop: (crop) => set({ selectedCrop: crop }),
+  setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
+  clearFilters: () => set({ filters: {} }),
+  clearError: () => set((state) => ({ crops: { ...state.crops, error: null } })),
+}));
