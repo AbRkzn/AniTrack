@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "AniTrack",
+    "slug": "anitrack",
+    "scheme": "anitrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icons/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./src/assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F9F4"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anitrack.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/icons/adaptive-icon.png",
+        "backgroundColor": "#2E7D32"
+      },
+      "package": "com.anitrack.app",
+      "permissions": ["NOTIFICATIONS", "ACCESS_NETWORK_STATE"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-notifications",
+        {
+          "icon": "./src/assets/icons/notification-icon.png",
+          "color": "#2E7D32"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AniTrack needs access to your photos to attach crop and farm images."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
