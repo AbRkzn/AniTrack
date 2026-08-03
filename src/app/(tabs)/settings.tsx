@@ -11,6 +11,7 @@ import { Icon, IconName } from '../../components/ui/Icon';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
 import { seedSampleData, clearAppData } from '../../database/seed';
+import { shareDatabaseBackup, importDatabaseBackup } from '../../services/backup';
 import { AppSettings } from '../../types';
 
 const THEME_OPTIONS = [
@@ -148,6 +149,47 @@ export default function SettingsScreen() {
     );
   }, []);
 
+  const onExportBackup = useCallback(() => {
+    Alert.alert('Export Backup', 'Create a backup file of all your data?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Export',
+        onPress: async () => {
+          try {
+            const result = await shareDatabaseBackup();
+            Alert.alert('Backup Created', `${result.fileName} (${Math.max(1, Math.round(result.sizeBytes / 1024))} KB)`);
+          } catch {
+            Alert.alert('Error', 'Failed to create backup.');
+          }
+        },
+      },
+    ]);
+  }, []);
+
+  const onImportBackup = useCallback(() => {
+    Alert.alert(
+      'Import Backup',
+      'This will replace all current data with the selected backup file. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Import',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const result = await importDatabaseBackup();
+              if (result.restored) {
+                Alert.alert('Restored', 'Backup restored. Restart the app to load the restored data.');
+              }
+            } catch {
+              Alert.alert('Error', 'Failed to restore backup.');
+            }
+          },
+        },
+      ]
+    );
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header title="Settings" />
@@ -238,6 +280,19 @@ export default function SettingsScreen() {
                 trackColor={{ true: colors.primary, false: colors.disabled }}
               />
             }
+          />
+        </Card>
+
+        <Card style={styles.sectionCard} padding={spacing.xs}>
+          <SettingRow
+            label="Export Backup"
+            icon="share-outline"
+            onPress={onExportBackup}
+          />
+          <SettingRow
+            label="Import Backup"
+            icon="file-tray-outline"
+            onPress={onImportBackup}
           />
         </Card>
 
