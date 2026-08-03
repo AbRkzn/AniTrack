@@ -10,8 +10,10 @@ import { StatCard } from '../../components/ui/Card';
 import { Header } from '../../components/ui/Header';
 import { OfflineBadge } from '../../components/ui/StatusBadge';
 import { Icon, IconName } from '../../components/ui/Icon';
+import { WeatherCard } from '../../components/weather/WeatherCard';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
+import { useHarvestReminders } from '../../hooks/useHarvestReminders';
 import { formatCurrency, withAlpha } from '../../utils/helpers';
 
 function QuickAction({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
@@ -43,6 +45,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  useHarvestReminders();
   const crops = useCropsStore((s) => s.crops.data);
   const expenses = useExpensesStore((s) => s.expenses.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
@@ -80,6 +83,8 @@ export default function DashboardScreen() {
           <StatCard title="Monthly Expenses" value={formatCurrency(totalExpenses, settings.currency)} icon="cash-outline" color={colors.error} style={styles.statHalf} />
           <StatCard title="Revenue" value={formatCurrency(totalRevenue, settings.currency)} icon="trending-up" color={colors.primary} style={styles.statHalf} />
         </View>
+
+        <WeatherCard onPress={() => router.push('/weather')} />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../../store/appStore';
@@ -6,6 +6,7 @@ import { Header } from '../../components/ui/Header';
 import { Card } from '../../components/ui/Card';
 import { ChipSelect } from '../../components/ui/ChipSelect';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { Icon, IconName } from '../../components/ui/Icon';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
@@ -104,6 +105,8 @@ export default function SettingsScreen() {
   const isOnline = useAppStore((s) => s.isOnline);
   const reminderText = `${settings.reminderDaysBeforeHarvest} days before`;
   const backupText = `Every ${settings.backupIntervalDays} days`;
+  const [latText, setLatText] = useState(String(settings.farmLatitude));
+  const [lonText, setLonText] = useState(String(settings.farmLongitude));
 
   const onLoadSampleData = useCallback(() => {
     Alert.alert('Load Sample Data', 'This will replace all current data with sample data. Continue?', [
@@ -238,6 +241,39 @@ export default function SettingsScreen() {
           />
         </Card>
 
+        <Text style={styles.sectionTitle}>Weather</Text>
+        <Card style={styles.locationCard} padding={spacing.md}>
+          <Input
+            label="Farm Latitude"
+            leftIcon="location-outline"
+            keyboardType="decimal-pad"
+            placeholder="-90 to 90"
+            value={latText}
+            onChangeText={(text) => {
+              setLatText(text);
+              const n = parseFloat(text);
+              if (!Number.isNaN(n) && n >= -90 && n <= 90) {
+                updateSettings({ farmLatitude: n });
+              }
+            }}
+          />
+          <Input
+            label="Farm Longitude"
+            leftIcon="compass-outline"
+            keyboardType="decimal-pad"
+            placeholder="-180 to 180"
+            value={lonText}
+            onChangeText={(text) => {
+              setLonText(text);
+              const n = parseFloat(text);
+              if (!Number.isNaN(n) && n >= -180 && n <= 180) {
+                updateSettings({ farmLongitude: n });
+              }
+            }}
+          />
+        </Card>
+        <Text style={styles.sectionNote}>Weather syncs automatically whenever the app comes online.</Text>
+
         <Button title="Load Sample Data" variant="outline" fullWidth onPress={onLoadSampleData} style={styles.dataButton} />
         <Button title="Clear All Data" variant="danger" fullWidth onPress={onClearAllData} style={styles.dataButton} />
 
@@ -277,6 +313,8 @@ const createStyles = (colors: ColorScheme) =>
     settingLabel: { ...typography.body, color: colors.textPrimary },
     settingValue: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
     fieldLabel: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.md, marginBottom: spacing.xs },
+    locationCard: { marginBottom: spacing.sm },
+    sectionNote: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
     stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     stepperButton: {
       width: 32,

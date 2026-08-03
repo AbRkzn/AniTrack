@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { seedIfEmpty } from '../database/seed';
 import { useAppStore } from '../store/appStore';
 import { ThemeProvider, useTheme } from '../constants/themeContext';
+import { configureNotifications, setupNotificationTapHandling } from '../services/notifications';
+import { useWeatherSync } from '../hooks/useWeatherSync';
 
 function RootNavigator({ ready }: { ready: boolean }) {
   const { colors, isDark } = useTheme();
@@ -46,6 +48,18 @@ function RootNavigator({ ready }: { ready: boolean }) {
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const loadSettings = useAppStore((s) => s.loadSettings);
+  useWeatherSync(ready);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    configureNotifications().catch(() => {});
+    setupNotificationTapHandling(() => router.push('/crops'))
+      .then((fn) => {
+        unsubscribe = fn;
+      })
+      .catch(() => {});
+    return () => unsubscribe?.();
+  }, []);
 
   useEffect(() => {
     Promise.all([seedIfEmpty(), loadSettings()]).finally(() => setReady(true));

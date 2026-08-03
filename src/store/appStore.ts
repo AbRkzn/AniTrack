@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { WeatherRecord, AppSettings, DEFAULT_SETTINGS, SyncState, SyncQueueItem } from '../types';
 import { WeatherRepository } from '../features/weather/repository/weatherRepository';
 import { SettingsRepository } from '../features/backup/repository/settingsRepository';
+import { syncWeatherFromApi } from '../services/weatherSync';
 
 interface AppUIState {
   settings: AppSettings;
@@ -58,10 +59,18 @@ export const useAppStore = create<AppUIState>((set, get) => ({
   fetchWeather: async () => {
     set((state) => ({ weather: { ...state.weather, isLoading: true, error: null } }));
     try {
-      const { current, forecast, lastSync } = await weatherRepository.getWeatherData();
-      set({ weather: { current, forecast, lastSync, isLoading: false, error: null } });
+      const result = get().isOnline
+        ? await syncWeatherFromApi(get().settings)
+        : await weatherRepository.getWeatherData();
+      set({ weather: { ...result, isLoading: false, error: null } });
     } catch (error) {
-      set((state) => ({ weather: { ...state.weather, isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch weather' } }));
+      const message = error instanceof Error ? error.message : 'Failed to fetch weather';
+      try {
+        const result = await weatherRepository.getWeatherData();
+        set({ weather: { ...result, isLoading: false, error: get().isOnline ? message : null } });
+      } catch {
+        set((state) => ({ weather: { ...state.weather, isLoading: false, error: message } }));
+      }
     }
   },
 

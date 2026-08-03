@@ -112,6 +112,27 @@ export function getCategoryIcon(category: string): IconName {
   return icons[category] || 'cube-outline';
 }
 
+export interface WeatherMeta {
+  label: string;
+  icon: IconName;
+  color: string;
+}
+
+const WEATHER_META: Record<string, WeatherMeta> = {
+  clear: { label: 'Sunny', icon: 'sunny-outline', color: '#F9A825' },
+  partly_cloudy: { label: 'Partly Cloudy', icon: 'partly-sunny-outline', color: '#FFA726' },
+  cloudy: { label: 'Cloudy', icon: 'cloudy-outline', color: '#9E9E9E' },
+  fog: { label: 'Foggy', icon: 'cloud-outline', color: '#78909C' },
+  drizzle: { label: 'Drizzle', icon: 'rainy-outline', color: '#2196F3' },
+  rain: { label: 'Rain', icon: 'rainy-outline', color: '#2196F3' },
+  thunderstorm: { label: 'Thunderstorm', icon: 'thunderstorm-outline', color: '#9C27B0' },
+  snow: { label: 'Snow', icon: 'snow-outline', color: '#42A5F5' },
+};
+
+export function getWeatherMeta(condition: string): WeatherMeta {
+  return WEATHER_META[condition] || { label: condition || 'Unknown', icon: 'cloud-outline', color: '#9E9E9E' };
+}
+
 export function withAlpha(hex: string, alpha: number): string {
   const h = hex.replace('#', '');
   const r = parseInt(h.slice(0, 2), 16);

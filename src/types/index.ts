@@ -251,6 +251,8 @@ export interface AppSettings {
   syncOnWifiOnly: boolean;
   pushNotifications: boolean;
   reminderDaysBeforeHarvest: number;
+  farmLatitude: number;
+  farmLongitude: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -264,6 +266,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   syncOnWifiOnly: true,
   pushNotifications: true,
   reminderDaysBeforeHarvest: 7,
+  farmLatitude: 15.6,
+  farmLongitude: 120.96,
 };
 
 // ---------------------------------------------------------------------------
