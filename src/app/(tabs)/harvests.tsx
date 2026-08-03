@@ -8,6 +8,7 @@ import { Header } from '../../components/ui/Header';
 import { Card, StatCard } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { FAB } from '../../components/ui/FAB';
+import { PhotoStrip } from '../../components/ui/PhotoStrip';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
 import { formatDate, formatCurrency } from '../../utils/helpers';
@@ -33,6 +34,7 @@ function HarvestCard({ harvest, onPress, onLongPress }: { harvest: Harvest; onPr
         )}
       </View>
       {harvest.notes ? <Text style={styles.harvestNotes}>{harvest.notes}</Text> : null}
+      <PhotoStrip photos={harvest.photos} />
     </Card>
   );
 }

@@ -21,6 +21,7 @@ import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
+import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { typography, spacing, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
 import { Harvest } from '../types';
@@ -81,6 +82,7 @@ export default function HarvestFormScreen() {
   });
 
   const [loading, setLoading] = useState(isEditing);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (crops.length === 0) fetchCrops();
@@ -104,6 +106,7 @@ export default function HarvestFormScreen() {
           sellingPrice: harvest.sellingPrice != null && harvest.sellingPrice > 0 ? String(harvest.sellingPrice) : '',
           notes: harvest.notes ?? '',
         });
+        setPhotos(harvest.photos ?? []);
       }
       setLoading(false);
     })();
@@ -124,7 +127,7 @@ export default function HarvestFormScreen() {
         revenue: values.revenue.trim() === '' ? undefined : Number(values.revenue),
         sellingPrice: values.sellingPrice.trim() === '' ? undefined : Number(values.sellingPrice),
         notes: values.notes.trim(),
-        photos: [],
+        photos,
       };
       try {
         if (harvestId) await updateHarvest(harvestId, payload);
@@ -134,7 +137,7 @@ export default function HarvestFormScreen() {
         Alert.alert('Error', 'Failed to save harvest. Please try again.');
       }
     },
-    [harvestId, addHarvest, updateHarvest]
+    [harvestId, addHarvest, updateHarvest, photos]
   );
 
   const onDelete = useCallback(() => {
@@ -223,6 +226,7 @@ export default function HarvestFormScreen() {
             {...register('sellingPrice')}
           />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
+          <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button
             title={isEditing ? 'Save Changes' : 'Add Harvest'}
             onPress={handleSubmit(onSubmit)}

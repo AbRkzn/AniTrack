@@ -10,6 +10,7 @@ import { StatusBadge } from '../../components/ui/StatusBadge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { FAB } from '../../components/ui/FAB';
 import { Icon } from '../../components/ui/Icon';
+import { PhotoStrip } from '../../components/ui/PhotoStrip';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
 import { formatNumber } from '../../utils/helpers';
@@ -60,6 +61,7 @@ function AnimalCard({ animal, onPress, onLongPress }: { animal: Animal; onPress:
         )}
         {ageLabel !== '' && <Text style={styles.animalDetail}>Age: {ageLabel}</Text>}
       </View>
+      <PhotoStrip photos={animal.photos} />
     </Card>
   );
 }

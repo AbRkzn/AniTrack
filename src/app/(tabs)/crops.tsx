@@ -8,6 +8,7 @@ import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ProgressBar } from '../../components/ui/ProgressBar';
+import { PhotoStrip } from '../../components/ui/PhotoStrip';
 import { FAB } from '../../components/ui/FAB';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
@@ -38,6 +39,7 @@ function CropCard({ crop, onPress, onLongPress }: { crop: Crop; onPress: () => v
         label="Growth Progress"
         showPercentage
       />
+      <PhotoStrip photos={crop.photos} />
     </Card>
   );
 }

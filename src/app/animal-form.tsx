@@ -19,6 +19,7 @@ import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
+import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { typography, spacing, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
 import { Animal, AnimalStatus } from '../types';
@@ -90,6 +91,7 @@ export default function AnimalFormScreen() {
   });
 
   const [loading, setLoading] = useState(isEditing);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -111,6 +113,7 @@ export default function AnimalFormScreen() {
           location: animal.location ?? '',
           notes: animal.notes ?? '',
         });
+        setPhotos(animal.photos ?? []);
       }
       setLoading(false);
     })();
@@ -133,7 +136,7 @@ export default function AnimalFormScreen() {
         status: values.status,
         location: values.location.trim(),
         notes: values.notes.trim(),
-        photos: [],
+        photos,
       };
       try {
         if (animalId) await updateAnimal(animalId, payload);
@@ -143,7 +146,7 @@ export default function AnimalFormScreen() {
         Alert.alert('Error', 'Failed to save animal. Please try again.');
       }
     },
-    [animalId, addAnimal, updateAnimal]
+    [animalId, addAnimal, updateAnimal, photos]
   );
 
   const onDelete = useCallback(() => {
@@ -237,6 +240,7 @@ export default function AnimalFormScreen() {
           />
           <Input label="Location" placeholder="e.g. Barn 2" error={errors.location?.message} {...register('location')} />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
+          <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button
             title={isEditing ? 'Save Changes' : 'Add Animal'}
             onPress={handleSubmit(onSubmit)}

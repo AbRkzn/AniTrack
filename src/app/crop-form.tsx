@@ -19,6 +19,7 @@ import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
+import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { typography, spacing, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
 import { Crop, CropStatus } from '../types';
@@ -81,6 +82,7 @@ export default function CropFormScreen() {
   });
 
   const [loading, setLoading] = useState(isEditing);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -100,6 +102,7 @@ export default function CropFormScreen() {
           yieldUnit: crop.yieldUnit ?? 'kg',
           notes: crop.notes ?? '',
         });
+        setPhotos(crop.photos ?? []);
       }
       setLoading(false);
     })();
@@ -118,7 +121,7 @@ export default function CropFormScreen() {
         expectedHarvestDate: values.expectedHarvestDate,
         status: values.status,
         notes: values.notes.trim(),
-        photos: [],
+        photos,
         yieldEstimate: values.yieldEstimate.trim() === '' ? 0 : Number(values.yieldEstimate),
         yieldUnit: values.yieldUnit.trim() || 'kg',
       };
@@ -130,7 +133,7 @@ export default function CropFormScreen() {
         Alert.alert('Error', 'Failed to save crop. Please try again.');
       }
     },
-    [cropId, addCrop, updateCrop]
+    [cropId, addCrop, updateCrop, photos]
   );
 
   const onDelete = useCallback(() => {
@@ -205,6 +208,7 @@ export default function CropFormScreen() {
           />
           <Input label="Yield unit" placeholder="kg" error={errors.yieldUnit?.message} {...register('yieldUnit')} />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
+          <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button
             title={isEditing ? 'Save Changes' : 'Add Crop'}
             onPress={handleSubmit(onSubmit)}
