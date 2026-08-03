@@ -630,6 +630,32 @@ export async function seedHealthRecordsIfEmpty(): Promise<void> {
   }
 }
 
+export async function seedHealthRecordExpensesIfEmpty(): Promise<void> {
+  const db = await getDatabase();
+  const records = await db.getAllAsync<any>(
+    `SELECT id, date, type, diagnosis, veterinarian, cost FROM animal_health_records
+     WHERE cost IS NOT NULL AND cost > 0
+       AND NOT EXISTS (SELECT 1 FROM expenses WHERE expenses.healthRecordId = animal_health_records.id)`
+  );
+  for (const row of records) {
+    const notes = [
+      row.type.replace(/_/g, ' '),
+      row.diagnosis,
+      row.veterinarian ? `Vet: ${row.veterinarian}` : '',
+    ].filter(Boolean).join(' - ');
+    await expenseRepository.create({
+      category: 'veterinary',
+      amount: row.cost,
+      currency: 'PHP',
+      date: row.date,
+      vendor: row.veterinarian || undefined,
+      notes,
+      healthRecordId: row.id,
+      recurring: false,
+    });
+  }
+}
+
 export async function clearAppData(): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM harvests');
@@ -662,6 +688,7 @@ export async function seedIfEmpty(): Promise<void> {
 
   await seedAnimalsIfEmpty();
   await seedHealthRecordsIfEmpty();
+  await seedHealthRecordExpensesIfEmpty();
 
   const flagged = await db.getFirstAsync<{ value: string }>(
     'SELECT value FROM settings WHERE key = ?',
