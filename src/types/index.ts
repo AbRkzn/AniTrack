@@ -255,7 +255,7 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
-  currency: 'USD',
+  currency: 'PHP',
   unitSystem: 'metric',
   yieldUnit: 'kg',
   language: 'en',

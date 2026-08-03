@@ -198,3 +198,6 @@ export const hitSlop = {
   left: 10,
   right: 10,
 };
+
+export type ColorScheme = typeof colors.light;
+export type ThemeMode = 'light' | 'dark' | 'system';

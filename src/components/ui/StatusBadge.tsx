@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, borderRadius, spacing } from '../../constants/theme';
+import { typography, borderRadius, spacing } from '../../constants/theme';
+import { Icon } from './Icon';
 
 interface OfflineBadgeProps {
   isOnline: boolean;
@@ -11,7 +12,7 @@ export function OfflineBadge({ isOnline }: OfflineBadgeProps) {
 
   return (
     <View style={styles.badge}>
-      <Text style={styles.dot}>?</Text>
+      <Icon name="cloud-offline-outline" size={14} color="#FF9800" />
       <Text style={styles.text}>Offline</Text>
     </View>
   );
@@ -56,10 +57,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     gap: 4,
-  },
-  dot: {
-    fontSize: 8,
-    color: '#FF9800',
   },
   text: {
     ...typography.caption,

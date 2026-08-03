@@ -18,7 +18,7 @@ export const expenseFormSchema = z.object({
   cropId: z.string().optional().or(z.literal('')),
   category: z.enum(['seed', 'fertilizer', 'pesticide', 'equipment', 'labor', 'irrigation', 'fuel', 'maintenance', 'transport', 'utility', 'insurance', 'rent', 'other']).default('other'),
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
-  currency: z.string().default('USD'),
+  currency: z.string().default('PHP'),
   date: z.string().min(1, 'Date is required'),
   vendor: z.string().max(200).optional().or(z.literal('')),
   receiptPhoto: z.string().optional().or(z.literal('')),

@@ -1,4 +1,5 @@
 import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import type { IconName } from '../components/ui/Icon';
 
 export function formatDate(dateString: string, formatStr: string = 'MMM dd, yyyy'): string {
   try {
@@ -12,12 +13,24 @@ export function formatShortDate(dateString: string): string {
   return formatDate(dateString, 'MM/dd/yy');
 }
 
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
+export function formatCurrency(amount: number, currency: string = 'PHP'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
+}
+
+export function getCurrencySymbol(currency: string = 'PHP'): string {
+  try {
+    return (
+      new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0 })
+        .formatToParts(0)
+        .find((p) => p.type === 'currency')?.value ?? currency
+    );
+  } catch {
+    return currency;
+  }
 }
 
 export function formatNumber(num: number, decimals: number = 1): string {
@@ -80,38 +93,31 @@ export function getStatusLabel(status: string): string {
     .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
-export function getCategoryIcon(category: string): string {
-  const icons: Record<string, string> = {
-    seed: '🌱',
-    fertilizer: '🧪',
-    pesticide: '🐛',
-    equipment: '⚙️',
-    labor: '👷',
-    irrigation: '💧',
-    fuel: '⛽',
-    maintenance: '🔧',
-    transport: '🚛',
-    utility: '⚡',
-    insurance: '🛡️',
-    rent: '🏠',
-    other: '📦',
+export function getCategoryIcon(category: string): IconName {
+  const icons: Record<string, IconName> = {
+    seed: 'leaf-outline',
+    fertilizer: 'flask-outline',
+    pesticide: 'bug-outline',
+    equipment: 'build-outline',
+    labor: 'people-outline',
+    irrigation: 'water-outline',
+    fuel: 'flame-outline',
+    maintenance: 'construct-outline',
+    transport: 'car-outline',
+    utility: 'flash-outline',
+    insurance: 'shield-checkmark-outline',
+    rent: 'home-outline',
+    other: 'cube-outline',
   };
-  return icons[category] || '📦';
+  return icons[category] || 'cube-outline';
 }
 
-export function getWeatherIcon(condition: string): string {
-  const icons: Record<string, string> = {
-    clear: '☀️',
-    partly_cloudy: '⛅',
-    cloudy: '☁️',
-    rain: '🌧️',
-    heavy_rain: '⛈️',
-    thunderstorm: '⛈️',
-    snow: '❄️',
-    fog: '🌫️',
-    wind: '💨',
-  };
-  return icons[condition] || '☀️';
+export function withAlpha(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export function truncateText(text: string, maxLength: number): string {

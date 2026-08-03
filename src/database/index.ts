@@ -1,13 +1,21 @@
 import * as SQLite from 'expo-sqlite';
 
-let db: SQLite.SQLiteDatabase | null = null;
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync('anitrack.db');
-    await initializeDatabase(db);
+export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDatabase().catch((err) => {
+      dbPromise = null;
+      throw err;
+    });
   }
-  return db;
+  return dbPromise;
+}
+
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const database = await SQLite.openDatabaseAsync('anitrack.db');
+  await initializeDatabase(database);
+  return database;
 }
 
 async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void> {
@@ -53,7 +61,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       cropId TEXT,
       category TEXT NOT NULL DEFAULT 'other',
       amount REAL NOT NULL DEFAULT 0,
-      currency TEXT NOT NULL DEFAULT 'USD',
+      currency TEXT NOT NULL DEFAULT 'PHP',
       date TEXT NOT NULL,
       vendor TEXT,
       receiptPhoto TEXT,
@@ -138,9 +146,10 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (db) {
-    await db.closeAsync();
-    db = null;
+  const database = dbPromise ? await dbPromise : null;
+  dbPromise = null;
+  if (database) {
+    await database.closeAsync();
   }
 }
 
