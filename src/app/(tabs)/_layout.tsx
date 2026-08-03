@@ -90,6 +90,7 @@ export default function TabsLayout() {
         options={{
           title: 'Settings',
           href: null,
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color, focused }) => <TabIcon route="settings" focused={focused} color={color} />,
         }}
       />

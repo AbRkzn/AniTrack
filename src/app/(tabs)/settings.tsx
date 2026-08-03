@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useAppStore } from '../../store/appStore';
 import { Header } from '../../components/ui/Header';
 import { Card } from '../../components/ui/Card';
@@ -192,7 +193,10 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title="Settings" />
+      <Header
+        title="Settings"
+        leftAction={{ icon: 'arrow-back', onPress: () => router.back() }}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>Appearance</Text>
         <Card style={styles.appearanceCard}>
