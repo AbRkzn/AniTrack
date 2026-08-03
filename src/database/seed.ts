@@ -2,13 +2,15 @@ import { getDatabase } from './index';
 import { CropRepository } from '../features/crops/repository/cropRepository';
 import { HarvestRepository } from '../features/harvests/repository/harvestRepository';
 import { ExpenseRepository } from '../features/expenses/repository/expenseRepository';
-import { Crop, Harvest, Expense } from '../types';
+import { AnimalRepository } from '../features/animals/repository/animalRepository';
+import { Crop, Harvest, Expense, Animal } from '../types';
 
 const SEED_FLAG = 'sample_data_seeded';
 
 const cropRepository = new CropRepository();
 const harvestRepository = new HarvestRepository();
 const expenseRepository = new ExpenseRepository();
+const animalRepository = new AnimalRepository();
 
 const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
@@ -190,12 +192,196 @@ async function insertExpenses(cropIds: Record<string, string>): Promise<void> {
   }
 }
 
+const SAMPLE_ANIMALS: Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    tagNumber: 'CB-001',
+    name: 'Buko',
+    species: 'Carabao',
+    birthDate: '2023-05-20',
+    sex: 'female',
+    weight: 520,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Corral 1',
+    notes: 'Primary draft animal, gentle temperament.',
+    photos: [],
+  },
+  {
+    tagNumber: 'CB-002',
+    name: 'Pula',
+    species: 'Carabao',
+    breed: 'Philippine',
+    birthDate: '2024-01-15',
+    sex: 'female',
+    weight: 380,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Corral 1',
+    notes: '',
+    photos: [],
+  },
+  {
+    tagNumber: 'CB-003',
+    name: 'Saging',
+    species: 'Carabao',
+    breed: 'Philippine',
+    birthDate: '2024-08-19',
+    sex: 'female',
+    weight: 340,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Corral 2',
+    notes: 'Young heifer, being trained for draft work.',
+    photos: [],
+  },
+  {
+    tagNumber: 'C-101',
+    name: 'Daisy',
+    species: 'Cattle',
+    breed: 'Brahman',
+    birthDate: '2022-08-01',
+    sex: 'female',
+    weight: 610,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Barn 2',
+    notes: 'Milking cow, morning and afternoon milkings.',
+    photos: [],
+  },
+  {
+    tagNumber: 'C-102',
+    name: 'Maximo',
+    species: 'Cattle',
+    breed: 'Native',
+    birthDate: '2021-11-02',
+    sex: 'male',
+    weight: 540,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Barn 2',
+    notes: 'Stud bull kept for breeding.',
+    photos: [],
+  },
+  {
+    tagNumber: 'G-201',
+    name: 'Jack',
+    species: 'Goat',
+    breed: 'Boer',
+    birthDate: '2025-02-10',
+    sex: 'male',
+    weight: 55,
+    weightUnit: 'kg',
+    status: 'sold',
+    location: 'Goat pen',
+    notes: 'Sold at the town fiesta market.',
+    photos: [],
+  },
+  {
+    tagNumber: 'G-202',
+    name: 'Puti',
+    species: 'Goat',
+    breed: 'Saanen',
+    birthDate: '2024-05-30',
+    sex: 'female',
+    weight: 48,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Goat pen',
+    notes: 'High milk production line.',
+    photos: [],
+  },
+  {
+    tagNumber: 'G-203',
+    name: 'Kambing',
+    species: 'Goat',
+    breed: 'Native',
+    birthDate: '2023-09-14',
+    sex: 'female',
+    weight: 42,
+    weightUnit: 'kg',
+    status: 'transferred',
+    location: 'Goat pen',
+    notes: 'Transferred to a partner farm in Bulacan.',
+    photos: [],
+  },
+  {
+    tagNumber: 'S-101',
+    name: 'Tupa',
+    species: 'Sheep',
+    breed: 'Dorper',
+    birthDate: '2024-11-11',
+    sex: 'female',
+    weight: 52,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Sheep shed',
+    notes: '',
+    photos: [],
+  },
+  {
+    tagNumber: 'P-101',
+    name: 'Baboy',
+    species: 'Pig',
+    breed: 'Landrace',
+    birthDate: '2025-01-22',
+    sex: 'female',
+    weight: 120,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Pigpen A',
+    notes: 'Fattening for the December market.',
+    photos: [],
+  },
+  {
+    tagNumber: 'CH-001',
+    name: 'Manok',
+    species: 'Chicken',
+    breed: 'Native',
+    birthDate: '2023-03-10',
+    sex: 'female',
+    weight: 1.8,
+    weightUnit: 'kg',
+    status: 'deceased',
+    location: 'Chicken coop',
+    notes: 'Laying hen, passed from old age.',
+    photos: [],
+  },
+  {
+    tagNumber: 'D-101',
+    name: 'Itik',
+    species: 'Duck',
+    breed: 'Pateros',
+    birthDate: '2025-06-05',
+    sex: 'male',
+    weight: 1.9,
+    weightUnit: 'kg',
+    status: 'active',
+    location: 'Duck pond',
+    notes: 'Drake kept for breeding flock.',
+    photos: [],
+  },
+];
+
+async function insertAnimals(): Promise<void> {
+  for (const animal of SAMPLE_ANIMALS) {
+    await animalRepository.create(animal);
+  }
+}
+
+export async function seedAnimalsIfEmpty(): Promise<void> {
+  const db = await getDatabase();
+  const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM animals');
+  if (existing && existing.count > 0) return;
+  await insertAnimals();
+}
+
 export async function clearAppData(): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM harvests');
   await db.runAsync('DELETE FROM fertilizer_schedules');
   await db.runAsync('DELETE FROM expenses');
   await db.runAsync('DELETE FROM crops');
+  await db.runAsync('DELETE FROM animals');
   await db.runAsync('DELETE FROM settings WHERE key = ?', [SEED_FLAG]);
 }
 
@@ -204,6 +390,7 @@ async function insertSampleData(): Promise<void> {
   const cropIds = await insertCrops();
   await insertHarvests(cropIds);
   await insertExpenses(cropIds);
+  await insertAnimals();
 
   await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [SEED_FLAG, '1']);
 }
@@ -215,6 +402,8 @@ export async function seedSampleData(): Promise<void> {
 
 export async function seedIfEmpty(): Promise<void> {
   const db = await getDatabase();
+
+  await seedAnimalsIfEmpty();
 
   const flagged = await db.getFirstAsync<{ value: string }>(
     'SELECT value FROM settings WHERE key = ?',

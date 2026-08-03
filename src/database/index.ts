@@ -140,6 +140,23 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS animals (
+      id TEXT PRIMARY KEY,
+      tagNumber TEXT NOT NULL,
+      name TEXT,
+      species TEXT NOT NULL DEFAULT 'Cattle',
+      breed TEXT,
+      birthDate TEXT,
+      sex TEXT NOT NULL DEFAULT 'female',
+      weight REAL,
+      weightUnit TEXT NOT NULL DEFAULT 'kg',
+      status TEXT NOT NULL DEFAULT 'active',
+      location TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      photos TEXT NOT NULL DEFAULT '[]',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
   `;
 
   await database.execAsync(schema);

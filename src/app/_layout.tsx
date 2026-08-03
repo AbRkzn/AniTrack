@@ -40,6 +40,7 @@ function RootNavigator({ ready }: { ready: boolean }) {
         <Stack.Screen name="harvest-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="expense-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="fertilizer-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="animal-form" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );

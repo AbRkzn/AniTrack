@@ -24,7 +24,8 @@ async function recordBackup(fileName: string, sizeBytes: number): Promise<void> 
        (SELECT COUNT(*) FROM crops) +
        (SELECT COUNT(*) FROM harvests) +
        (SELECT COUNT(*) FROM expenses) +
-       (SELECT COUNT(*) FROM fertilizer_schedules) AS count`
+       (SELECT COUNT(*) FROM fertilizer_schedules) +
+       (SELECT COUNT(*) FROM animals) AS count`
   );
   await executeSql(
     `INSERT INTO backup_history (id, filename, sizeBytes, recordCount, createdAt, type, status)

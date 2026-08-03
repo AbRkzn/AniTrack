@@ -13,6 +13,7 @@ const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> 
   index: { active: 'home', inactive: 'home-outline' },
   crops: { active: 'leaf', inactive: 'leaf-outline' },
   harvests: { active: 'basket', inactive: 'basket-outline' },
+  animals: { active: 'paw', inactive: 'paw-outline' },
   expenses: { active: 'wallet', inactive: 'wallet-outline' },
   settings: { active: 'settings', inactive: 'settings-outline' },
 };
@@ -71,6 +72,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="animals"
+        options={{
+          title: 'Animals',
+          tabBarIcon: ({ color, focused }) => <TabIcon route="animals" focused={focused} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="expenses"
         options={{
           title: 'Expenses',
@@ -81,6 +89,7 @@ export default function TabsLayout() {
         name="settings"
         options={{
           title: 'Settings',
+          href: null,
           tabBarIcon: ({ color, focused }) => <TabIcon route="settings" focused={focused} color={color} />,
         }}
       />

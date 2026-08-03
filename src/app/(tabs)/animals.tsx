@@ -1,0 +1,171 @@
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
+import { differenceInCalendarMonths } from 'date-fns';
+import { useAnimalsStore } from '../../store/animalsStore';
+import { Header } from '../../components/ui/Header';
+import { Card } from '../../components/ui/Card';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { FAB } from '../../components/ui/FAB';
+import { Icon } from '../../components/ui/Icon';
+import { typography, spacing, ColorScheme } from '../../constants/theme';
+import { useTheme } from '../../constants/themeContext';
+import { formatNumber } from '../../utils/helpers';
+import { Animal } from '../../types';
+
+function getAgeLabel(birthDate?: string): string {
+  if (!birthDate) return '';
+  const totalMonths = differenceInCalendarMonths(new Date(), new Date(birthDate));
+  if (totalMonths <= 0) return 'Newborn';
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  if (years > 0) {
+    return months > 0 ? `${years} yr ${months} mo` : `${years} yr${years > 1 ? 's' : ''}`;
+  }
+  return `${months} mo`;
+}
+
+function AnimalCard({ animal, onPress, onLongPress }: { animal: Animal; onPress: () => void; onLongPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const displayName = animal.name || animal.tagNumber;
+  const ageLabel = getAgeLabel(animal.birthDate);
+
+  return (
+    <Card style={styles.animalCard} padding={spacing.lg} onPress={onPress} onLongPress={onLongPress}>
+      <View style={styles.animalHeader}>
+        <View style={[styles.avatar, { backgroundColor: colors.primaryFaded }]}>
+          <Icon name="paw-outline" size={22} color={colors.primary} />
+        </View>
+        <View style={styles.animalInfo}>
+          <Text style={styles.animalName}>{displayName}</Text>
+          <Text style={styles.animalTag}>
+            {animal.tagNumber}
+            {animal.breed ? ` · ${animal.breed}` : ''}
+          </Text>
+        </View>
+        <StatusBadge status={animal.status} />
+      </View>
+      <View style={styles.animalDetails}>
+        <Text style={styles.animalDetail}>Species: {animal.species}</Text>
+        <Text style={styles.animalDetail}>Sex: {animal.sex === 'male' ? 'Male' : 'Female'}</Text>
+      </View>
+      <View style={styles.animalDetails}>
+        {animal.weight != null && (
+          <Text style={styles.animalDetail}>
+            Weight: {formatNumber(animal.weight, 0)} {animal.weightUnit}
+          </Text>
+        )}
+        {ageLabel !== '' && <Text style={styles.animalDetail}>Age: {ageLabel}</Text>}
+      </View>
+    </Card>
+  );
+}
+
+export default function AnimalsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const animals = useAnimalsStore((s) => s.animals.data);
+  const isLoading = useAnimalsStore((s) => s.animals.isLoading);
+  const error = useAnimalsStore((s) => s.animals.error);
+  const fetchAnimals = useAnimalsStore((s) => s.fetchAnimals);
+  const deleteAnimal = useAnimalsStore((s) => s.deleteAnimal);
+  const activeCount = animals.filter((a) => a.status === 'active').length;
+  const subtitle = `${animals.length} total · ${activeCount} active`;
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAnimals();
+    }, [fetchAnimals])
+  );
+
+  const confirmDelete = useCallback(
+    (animal: Animal) => {
+      Alert.alert('Delete Animal', `Delete "${animal.name || animal.tagNumber}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAnimal(animal.id);
+            } catch {
+              Alert.alert('Error', 'Failed to delete animal.');
+            }
+          },
+        },
+      ]);
+    },
+    [deleteAnimal]
+  );
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <Header title="Livestock" subtitle={subtitle} />
+      <View style={styles.container}>
+        {error && <Text style={styles.errorText}>{error}</Text>}
+        {animals.length === 0 && !isLoading ? (
+          <EmptyState
+            title="No Animals Added Yet"
+            message="Start tracking your livestock by adding your first animal."
+            icon="paw-outline"
+          />
+        ) : (
+          <FlatList
+            data={animals}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <AnimalCard
+                animal={item}
+                onPress={() => router.push(`/animal-form?id=${item.id}`)}
+                onLongPress={() => confirmDelete(item)}
+              />
+            )}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={fetchAnimals}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+          />
+        )}
+        <FAB icon="add" onPress={() => router.push('/animal-form')} />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const createStyles = (colors: ColorScheme) =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.surface },
+    container: { flex: 1, backgroundColor: colors.background },
+    list: { padding: spacing.lg },
+    animalCard: { marginBottom: spacing.md },
+    animalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: spacing.md,
+    },
+    animalInfo: { flex: 1, marginRight: spacing.sm },
+    animalName: { ...typography.h4, color: colors.textPrimary },
+    animalTag: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
+    animalDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.sm },
+    animalDetail: { ...typography.bodySmall, color: colors.textSecondary },
+    errorText: {
+      ...typography.caption,
+      color: colors.error,
+      textAlign: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.sm,
+    },
+  });

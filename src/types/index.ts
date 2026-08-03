@@ -332,6 +332,12 @@ export interface HarvestQuery extends QueryOptions {
   dateTo?: string;
 }
 
+export interface AnimalQuery extends QueryOptions {
+  status?: AnimalStatus;
+  sex?: 'male' | 'female';
+  search?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Store / State Types
 // ---------------------------------------------------------------------------
@@ -374,6 +380,12 @@ export interface HarvestsState {
   filters: HarvestQuery;
 }
 
+export interface AnimalsState {
+  animals: AsyncState<Animal[]>;
+  selectedAnimal: Animal | null;
+  filters: AnimalQuery;
+}
+
 export interface SyncStateUI {
   sync: SyncState;
   queue: SyncQueueItem[];
@@ -384,6 +396,7 @@ export interface AppState {
   expenses: ExpensesState;
   fertilizer: FertilizerState;
   harvests: HarvestsState;
+  animals: AnimalsState;
   sync: SyncStateUI;
   settings: AppSettings;
   isOnline: boolean;
@@ -474,4 +487,8 @@ export function isExpenseCategory(value: string): value is ExpenseCategory {
     'irrigation', 'fuel', 'maintenance', 'transport', 'utility',
     'insurance', 'rent', 'other',
   ].includes(value);
+}
+
+export function isAnimalStatus(value: string): value is AnimalStatus {
+  return ['active', 'sold', 'deceased', 'transferred'].includes(value);
 }

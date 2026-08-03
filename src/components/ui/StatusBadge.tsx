@@ -34,6 +34,10 @@ export function StatusBadge({ status, style }: StatusBadgeProps) {
       case 'in_progress': return { bg: '#E3F2FD', text: '#2196F3' };
       case 'completed': return { bg: '#E8F5E9', text: '#4CAF50' };
       case 'skipped': return { bg: '#F5F5F5', text: '#9E9E9E' };
+      case 'active': return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'sold': return { bg: '#E3F2FD', text: '#2196F3' };
+      case 'deceased': return { bg: '#FFEBEE', text: '#D32F2F' };
+      case 'transferred': return { bg: '#F3E5F5', text: '#9C27B0' };
       default: return { bg: '#F5F5F5', text: '#666666' };
     }
   };
