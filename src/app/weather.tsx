@@ -63,9 +63,12 @@ export default function WeatherScreen() {
   }
 
   const meta = getWeatherMeta(current.conditions);
-  const location = settings.farmLatitude && settings.farmLongitude
-    ? `${settings.farmLatitude.toFixed(2)}, ${settings.farmLongitude.toFixed(2)}`
-    : current.location || 'Farm location';
+  const location =
+    settings.farmLocationName ||
+    (settings.farmLatitude && settings.farmLongitude
+      ? `${settings.farmLatitude.toFixed(2)}, ${settings.farmLongitude.toFixed(2)}`
+      : current.location) ||
+    'Farm location';
 
   const dayLabel = (date: string, index: number) => {
     if (index === 0) return 'Today';
@@ -98,6 +101,10 @@ export default function WeatherScreen() {
           </View>
           <Text style={[styles.heroCondition, { color: meta.color }]}>{meta.label}</Text>
           <Text style={styles.heroDate}>{formatDate(current.date, 'EEEE, MMMM d, yyyy')}</Text>
+          <View style={styles.heroLocation}>
+            <Icon name="location-outline" size={16} color={colors.textSecondary} />
+            <Text style={styles.heroLocationText} numberOfLines={1}>{location}</Text>
+          </View>
           <View style={styles.heroTemps}>
             <View style={styles.heroTempBlock}>
               <Text style={styles.heroTemp}>{Math.round(current.temperatureHigh)}°</Text>
@@ -207,7 +214,19 @@ const createStyles = (colors: ColorScheme) =>
     heroDate: {
       ...typography.caption,
       color: colors.textSecondary,
+      marginBottom: spacing.sm,
+    },
+    heroLocation: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       marginBottom: spacing.lg,
+    },
+    heroLocationText: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      flexShrink: 1,
     },
     heroTemps: {
       flexDirection: 'row',

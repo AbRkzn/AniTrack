@@ -299,6 +299,13 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Weather</Text>
         <Card style={styles.locationCard} padding={spacing.md}>
           <Input
+            label="Farm Location Name"
+            leftIcon="map-outline"
+            placeholder="e.g. Nueva Ecija, Philippines"
+            value={settings.farmLocationName}
+            onChangeText={(text) => updateSettings({ farmLocationName: text })}
+          />
+          <Input
             label="Farm Latitude"
             leftIcon="location-outline"
             keyboardType="decimal-pad"

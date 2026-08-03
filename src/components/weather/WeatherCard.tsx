@@ -51,6 +51,12 @@ export function WeatherCard({ onPress }: { onPress?: () => void }) {
   }
 
   const meta = getWeatherMeta(current.conditions);
+  const location =
+    settings.farmLocationName ||
+    (settings.farmLatitude && settings.farmLongitude
+      ? `${settings.farmLatitude.toFixed(2)}, ${settings.farmLongitude.toFixed(2)}`
+      : current.location) ||
+    'Farm location';
 
   return (
     <Card style={styles.card} padding={spacing.lg} onPress={onPress}>
@@ -61,6 +67,12 @@ export function WeatherCard({ onPress }: { onPress?: () => void }) {
         <View style={styles.titleBlock}>
           <Text style={styles.title}>Weather</Text>
           <Text style={[styles.subtitle, { color: meta.color }]}>{meta.label}</Text>
+          <View style={styles.locationRow}>
+            <Icon name="location-outline" size={12} color={colors.textTertiary} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {location}
+            </Text>
+          </View>
         </View>
         <View style={styles.tempBlock}>
           <Text style={styles.tempHigh}>
@@ -119,6 +131,17 @@ const createStyles = (colors: ColorScheme) =>
       ...typography.caption,
       color: colors.textSecondary,
       marginTop: 2,
+    },
+    locationRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginTop: 3,
+    },
+    locationText: {
+      ...typography.caption,
+      color: colors.textTertiary,
+      flexShrink: 1,
     },
     tempBlock: {
       alignItems: 'flex-end',

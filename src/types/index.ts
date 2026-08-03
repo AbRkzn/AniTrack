@@ -253,6 +253,7 @@ export interface AppSettings {
   reminderDaysBeforeHarvest: number;
   farmLatitude: number;
   farmLongitude: number;
+  farmLocationName: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -268,6 +269,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reminderDaysBeforeHarvest: 7,
   farmLatitude: 15.6,
   farmLongitude: 120.96,
+  farmLocationName: 'Nueva Ecija, Philippines',
 };
 
 // ---------------------------------------------------------------------------
