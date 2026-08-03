@@ -136,11 +136,13 @@ export interface Animal {
 
 export type AnimalStatus = 'active' | 'sold' | 'deceased' | 'transferred';
 
+export type AnimalHealthType = 'examination' | 'vaccination' | 'treatment' | 'surgery';
+
 export interface AnimalHealthRecord {
   id: string;
   animalId: string;
   date: string;
-  type: 'examination' | 'vaccination' | 'treatment' | 'surgery';
+  type: AnimalHealthType;
   diagnosis?: string;
   medication?: string;
   dosage?: string;
@@ -287,6 +289,7 @@ export type ExpenseFormData = Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>;
 export type FertilizerFormData = Omit<FertilizerApplication, 'id' | 'createdAt' | 'updatedAt'>;
 export type HarvestFormData = Omit<Harvest, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalFormData = Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>;
+export type AnimalHealthFormData = Omit<AnimalHealthRecord, 'id' | 'createdAt'>;
 
 // ---------------------------------------------------------------------------
 // Repository Types
@@ -338,6 +341,13 @@ export interface AnimalQuery extends QueryOptions {
   search?: string;
 }
 
+export interface AnimalHealthQuery extends QueryOptions {
+  animalId?: string;
+  type?: AnimalHealthType;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Store / State Types
 // ---------------------------------------------------------------------------
@@ -384,6 +394,11 @@ export interface AnimalsState {
   animals: AsyncState<Animal[]>;
   selectedAnimal: Animal | null;
   filters: AnimalQuery;
+}
+
+export interface AnimalHealthState {
+  records: AsyncState<AnimalHealthRecord[]>;
+  selectedRecord: AnimalHealthRecord | null;
 }
 
 export interface SyncStateUI {
@@ -491,4 +506,8 @@ export function isExpenseCategory(value: string): value is ExpenseCategory {
 
 export function isAnimalStatus(value: string): value is AnimalStatus {
   return ['active', 'sold', 'deceased', 'transferred'].includes(value);
+}
+
+export function isAnimalHealthType(value: string): value is AnimalHealthType {
+  return ['examination', 'vaccination', 'treatment', 'surgery'].includes(value);
 }

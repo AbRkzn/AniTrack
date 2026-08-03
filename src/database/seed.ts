@@ -3,7 +3,8 @@ import { CropRepository } from '../features/crops/repository/cropRepository';
 import { HarvestRepository } from '../features/harvests/repository/harvestRepository';
 import { ExpenseRepository } from '../features/expenses/repository/expenseRepository';
 import { AnimalRepository } from '../features/animals/repository/animalRepository';
-import { Crop, Harvest, Expense, Animal } from '../types';
+import { AnimalHealthRecordRepository } from '../features/animals/repository/animalHealthRecordRepository';
+import { Crop, Harvest, Expense, Animal, AnimalHealthRecord } from '../types';
 
 const SEED_FLAG = 'sample_data_seeded';
 
@@ -11,6 +12,7 @@ const cropRepository = new CropRepository();
 const harvestRepository = new HarvestRepository();
 const expenseRepository = new ExpenseRepository();
 const animalRepository = new AnimalRepository();
+const healthRepository = new AnimalHealthRecordRepository();
 
 const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
@@ -362,9 +364,227 @@ const SAMPLE_ANIMALS: Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>[] = [
   },
 ];
 
-async function insertAnimals(): Promise<void> {
+const SAMPLE_HEALTH_RECORDS: Omit<AnimalHealthRecord, 'id' | 'createdAt'>[] = [
+  {
+    animalId: 'C-101',
+    date: '2026-05-12',
+    type: 'vaccination',
+    diagnosis: 'Annual booster',
+    medication: 'Brucellosis vaccine',
+    dosage: '2ml',
+    veterinarian: 'Dr. Santos',
+    cost: 350,
+    notes: 'Routine annual vaccination.',
+  },
+  {
+    animalId: 'C-101',
+    date: '2026-03-02',
+    type: 'examination',
+    diagnosis: 'Routine health check',
+    veterinarian: 'Dr. Santos',
+    cost: 200,
+    notes: 'Vital signs normal, weight stable.',
+  },
+  {
+    animalId: 'C-101',
+    date: '2025-09-14',
+    type: 'treatment',
+    diagnosis: 'Mastitis (right front quarter)',
+    medication: 'Ceftiofur injection',
+    dosage: '10ml',
+    veterinarian: 'Dr. Santos',
+    cost: 480,
+    notes: 'Milk withheld for 5 days, recovered fully.',
+  },
+  {
+    animalId: 'CB-001',
+    date: '2026-06-20',
+    type: 'treatment',
+    diagnosis: 'Minor hoof infection',
+    medication: 'Iodine solution',
+    dosage: 'Apply daily',
+    veterinarian: 'Dr. Reyes',
+    cost: 150,
+    notes: 'Cleaned and dressed the hoof, keep dry for a week.',
+  },
+  {
+    animalId: 'CB-001',
+    date: '2026-02-14',
+    type: 'examination',
+    diagnosis: 'Pregnancy check',
+    veterinarian: 'Dr. Reyes',
+    cost: 300,
+    notes: 'Confirmed pregnant, est. calving around September.',
+  },
+  {
+    animalId: 'CB-001',
+    date: '2025-11-05',
+    type: 'vaccination',
+    diagnosis: 'Deworming',
+    medication: 'Fenbendazole',
+    dosage: '10ml oral',
+    veterinarian: 'Dr. Reyes',
+    cost: 90,
+    notes: '',
+  },
+  {
+    animalId: 'CB-002',
+    date: '2026-07-08',
+    type: 'examination',
+    diagnosis: 'Pregnancy check',
+    veterinarian: 'Dr. Reyes',
+    cost: 300,
+    notes: 'Not yet confirmed, recheck next month.',
+  },
+  {
+    animalId: 'CB-002',
+    date: '2026-04-30',
+    type: 'vaccination',
+    diagnosis: 'Deworming',
+    medication: 'Ivermectin',
+    dosage: '5ml subcutaneous',
+    veterinarian: 'Dr. Reyes',
+    cost: 95,
+    notes: '',
+  },
+  {
+    animalId: 'C-102',
+    date: '2026-06-25',
+    type: 'vaccination',
+    diagnosis: 'FMD vaccination',
+    medication: 'Foot and mouth vaccine',
+    dosage: '2ml',
+    veterinarian: 'Dr. Santos',
+    cost: 400,
+    notes: 'Second dose of the season.',
+  },
+  {
+    animalId: 'C-102',
+    date: '2026-02-10',
+    type: 'examination',
+    diagnosis: 'Breeding soundness exam',
+    veterinarian: 'Dr. Santos',
+    cost: 350,
+    notes: 'Semen quality good, cleared for breeding season.',
+  },
+  {
+    animalId: 'G-202',
+    date: '2026-04-18',
+    type: 'surgery',
+    diagnosis: 'Dehorning',
+    veterinarian: 'Dr. Reyes',
+    cost: 250,
+    notes: 'Recovered well after procedure.',
+  },
+  {
+    animalId: 'G-202',
+    date: '2026-01-22',
+    type: 'treatment',
+    diagnosis: 'Scours (diarrhea)',
+    medication: 'Oral electrolytes + antibiotics',
+    dosage: 'Twice daily for 3 days',
+    veterinarian: 'Dr. Reyes',
+    cost: 120,
+    notes: 'Kept isolated, resolved within the week.',
+  },
+  {
+    animalId: 'D-101',
+    date: '2026-06-30',
+    type: 'vaccination',
+    diagnosis: 'Duck cholera vaccination',
+    medication: 'Duck cholera vaccine',
+    dosage: '0.5ml subcutaneous',
+    veterinarian: 'Dr. Reyes',
+    cost: 120,
+    notes: 'Whole flock vaccinated.',
+  },
+  {
+    animalId: 'D-101',
+    date: '2026-04-12',
+    type: 'treatment',
+    diagnosis: 'Bumblefoot (foot pad infection)',
+    medication: 'Antibiotic ointment',
+    dosage: 'Apply twice daily',
+    veterinarian: 'Dr. Reyes',
+    cost: 80,
+    notes: 'Kept on clean dry bedding until healed.',
+  },
+  {
+    animalId: 'D-101',
+    date: '2026-02-03',
+    type: 'examination',
+    diagnosis: 'Routine health check',
+    veterinarian: 'Dr. Santos',
+    cost: 100,
+    notes: 'Feathers and appetite normal.',
+  },
+  {
+    animalId: 'S-101',
+    date: '2026-05-28',
+    type: 'treatment',
+    diagnosis: 'Hoof trimming (laminitis prevention)',
+    veterinarian: 'Dr. Santos',
+    cost: 180,
+    notes: 'Trimmed all four hooves, gait improved.',
+  },
+  {
+    animalId: 'P-101',
+    date: '2026-06-05',
+    type: 'vaccination',
+    diagnosis: 'Hog cholera vaccination',
+    medication: 'Hog cholera vaccine',
+    dosage: '2ml intramuscular',
+    veterinarian: 'Dr. Santos',
+    cost: 220,
+    notes: 'Booster due next year.',
+  },
+  {
+    animalId: 'P-101',
+    date: '2026-03-15',
+    type: 'treatment',
+    diagnosis: 'Intestinal worms',
+    medication: 'Ivermectin',
+    dosage: '1ml per 33kg',
+    veterinarian: 'Dr. Reyes',
+    cost: 130,
+    notes: 'Repeat in 2 weeks.',
+  },
+  {
+    animalId: 'CH-001',
+    date: '2026-01-10',
+    type: 'vaccination',
+    diagnosis: 'Newcastle disease vaccination',
+    medication: 'Newcastle disease vaccine',
+    dosage: '0.2ml',
+    veterinarian: 'Dr. Santos',
+    cost: 60,
+    notes: 'Applied before the laying season.',
+  },
+  {
+    animalId: 'G-201',
+    date: '2026-05-02',
+    type: 'examination',
+    diagnosis: 'Routine health check',
+    veterinarian: 'Dr. Reyes',
+    cost: 100,
+    notes: 'All vitals normal.',
+  },
+];
+
+async function insertAnimals(): Promise<Record<string, string>> {
+  const ids: Record<string, string> = {};
   for (const animal of SAMPLE_ANIMALS) {
-    await animalRepository.create(animal);
+    const created = await animalRepository.create(animal);
+    ids[animal.tagNumber] = created.id;
+  }
+  return ids;
+}
+
+async function insertHealthRecords(animalIds: Record<string, string>): Promise<void> {
+  for (const record of SAMPLE_HEALTH_RECORDS) {
+    const animalId = animalIds[record.animalId];
+    if (!animalId) continue;
+    await healthRepository.create({ ...record, animalId });
   }
 }
 
@@ -372,7 +592,42 @@ export async function seedAnimalsIfEmpty(): Promise<void> {
   const db = await getDatabase();
   const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM animals');
   if (existing && existing.count > 0) return;
-  await insertAnimals();
+  const animalIds = await insertAnimals();
+  await insertHealthRecords(animalIds);
+}
+
+export async function seedHealthRecordsIfEmpty(): Promise<void> {
+  const db = await getDatabase();
+  const tagNumbers = [...new Set(SAMPLE_HEALTH_RECORDS.map((record) => record.animalId))];
+  const animalIds: Record<string, string> = {};
+  for (const tagNumber of tagNumbers) {
+    const animal = await db.getFirstAsync<{ id: string }>('SELECT id FROM animals WHERE tagNumber = ?', [tagNumber]);
+    if (animal) animalIds[tagNumber] = animal.id;
+  }
+  if (Object.keys(animalIds).length === 0) {
+    const anyAnimals = await db.getAllAsync<{ id: string }>('SELECT id FROM animals LIMIT 5');
+    if (anyAnimals.length === 0) return;
+    const fallbackRecords = SAMPLE_HEALTH_RECORDS.slice(0, anyAnimals.length * 2).map((record) => ({ ...record }));
+    fallbackRecords.forEach((record, index) => {
+      record.animalId = anyAnimals[index % anyAnimals.length].id;
+    });
+    for (const record of fallbackRecords) {
+      await healthRepository.create(record);
+    }
+    return;
+  }
+  for (const tagNumber of Object.keys(animalIds)) {
+    const animalId = animalIds[tagNumber];
+    const has = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM animal_health_records WHERE animalId = ?',
+      [animalId]
+    );
+    if (has && has.count > 0) continue;
+    for (const record of SAMPLE_HEALTH_RECORDS) {
+      if (record.animalId !== tagNumber) continue;
+      await healthRepository.create({ ...record, animalId });
+    }
+  }
 }
 
 export async function clearAppData(): Promise<void> {
@@ -381,6 +636,7 @@ export async function clearAppData(): Promise<void> {
   await db.runAsync('DELETE FROM fertilizer_schedules');
   await db.runAsync('DELETE FROM expenses');
   await db.runAsync('DELETE FROM crops');
+  await db.runAsync('DELETE FROM animal_health_records');
   await db.runAsync('DELETE FROM animals');
   await db.runAsync('DELETE FROM settings WHERE key = ?', [SEED_FLAG]);
 }
@@ -390,7 +646,8 @@ async function insertSampleData(): Promise<void> {
   const cropIds = await insertCrops();
   await insertHarvests(cropIds);
   await insertExpenses(cropIds);
-  await insertAnimals();
+  const animalIds = await insertAnimals();
+  await insertHealthRecords(animalIds);
 
   await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [SEED_FLAG, '1']);
 }
@@ -404,6 +661,7 @@ export async function seedIfEmpty(): Promise<void> {
   const db = await getDatabase();
 
   await seedAnimalsIfEmpty();
+  await seedHealthRecordsIfEmpty();
 
   const flagged = await db.getFirstAsync<{ value: string }>(
     'SELECT value FROM settings WHERE key = ?',

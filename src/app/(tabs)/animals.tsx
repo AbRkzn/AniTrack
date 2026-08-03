@@ -121,7 +121,7 @@ export default function AnimalsScreen() {
             renderItem={({ item }) => (
               <AnimalCard
                 animal={item}
-                onPress={() => router.push(`/animal-form?id=${item.id}`)}
+                onPress={() => router.push(`/animal-detail?id=${item.id}`)}
                 onLongPress={() => confirmDelete(item)}
               />
             )}

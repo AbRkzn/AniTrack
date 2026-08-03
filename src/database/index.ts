@@ -157,6 +157,20 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS animal_health_records (
+      id TEXT PRIMARY KEY,
+      animalId TEXT NOT NULL,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'examination',
+      diagnosis TEXT,
+      medication TEXT,
+      dosage TEXT,
+      veterinarian TEXT,
+      cost REAL,
+      notes TEXT NOT NULL DEFAULT '',
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (animalId) REFERENCES animals(id) ON DELETE CASCADE
+    );
   `;
 
   await database.execAsync(schema);

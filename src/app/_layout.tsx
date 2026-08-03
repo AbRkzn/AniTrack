@@ -41,6 +41,7 @@ function RootNavigator({ ready }: { ready: boolean }) {
         <Stack.Screen name="expense-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="fertilizer-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="animal-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="health-record-form" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );
