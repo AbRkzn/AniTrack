@@ -1,6 +1,9 @@
 import { create } from 'zustand';
-import { AnimalHealthRecord, AsyncState } from '../types';
+import { AnimalHealthRecord, AsyncState, Expense } from '../types';
 import { AnimalHealthRecordRepository } from '../features/animals/repository/animalHealthRecordRepository';
+import { ExpenseRepository } from '../features/expenses/repository/expenseRepository';
+import { useExpensesStore } from './expensesStore';
+import { useAppStore } from './appStore';
 
 interface AnimalHealthState {
   records: AsyncState<AnimalHealthRecord[]>;
@@ -16,6 +19,50 @@ interface AnimalHealthState {
 }
 
 const repository = new AnimalHealthRecordRepository();
+const expenseRepository = new ExpenseRepository();
+
+function buildHealthExpense(record: AnimalHealthRecord): Omit<Expense, 'id' | 'createdAt' | 'updatedAt'> {
+  const typeLabel = record.type.replace(/_/g, ' ');
+  const notes = [typeLabel, record.diagnosis, record.veterinarian ? `Vet: ${record.veterinarian}` : '']
+    .filter(Boolean)
+    .join(' - ');
+  return {
+    category: 'veterinary',
+    amount: record.cost ?? 0,
+    currency: useAppStore.getState().settings.currency,
+    date: record.date,
+    vendor: record.veterinarian,
+    notes,
+    healthRecordId: record.id,
+    recurring: false,
+  };
+}
+
+async function syncHealthRecordExpense(record: AnimalHealthRecord): Promise<void> {
+  const hasCost = typeof record.cost === 'number' && record.cost > 0;
+  const existing = await expenseRepository.getByHealthRecordId(record.id);
+  const expensesStore = useExpensesStore.getState();
+
+  if (hasCost && !existing) {
+    await expensesStore.addExpense(buildHealthExpense(record));
+  } else if (hasCost && existing) {
+    await expensesStore.updateExpense(existing.id, {
+      amount: record.cost,
+      date: record.date,
+      vendor: record.veterinarian,
+      notes: buildHealthExpense(record).notes,
+    });
+  } else if (!hasCost && existing) {
+    await expensesStore.deleteExpense(existing.id);
+  }
+}
+
+async function removeHealthRecordExpense(healthRecordId: string): Promise<void> {
+  const existing = await expenseRepository.getByHealthRecordId(healthRecordId);
+  if (existing) {
+    await useExpensesStore.getState().deleteExpense(existing.id);
+  }
+}
 
 export const useAnimalHealthStore = create<AnimalHealthState>((set, get) => ({
   records: { data: [], isLoading: false, error: null },
@@ -39,6 +86,11 @@ export const useAnimalHealthStore = create<AnimalHealthState>((set, get) => ({
     try {
       const newRecord = await repository.create(data);
       set((state) => ({ records: { ...state.records, data: [newRecord, ...state.records.data] } }));
+      try {
+        await syncHealthRecordExpense(newRecord);
+      } catch (expenseError) {
+        console.warn('Failed to sync health record expense:', expenseError);
+      }
       return newRecord;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add health record';
@@ -54,6 +106,11 @@ export const useAnimalHealthStore = create<AnimalHealthState>((set, get) => ({
         records: { ...state.records, data: state.records.data.map((r) => (r.id === id ? updatedRecord : r)) },
       }));
       if (get().selectedRecord?.id === id) set({ selectedRecord: updatedRecord });
+      try {
+        await syncHealthRecordExpense(updatedRecord);
+      } catch (expenseError) {
+        console.warn('Failed to sync health record expense:', expenseError);
+      }
       return updatedRecord;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update health record';
@@ -67,6 +124,11 @@ export const useAnimalHealthStore = create<AnimalHealthState>((set, get) => ({
       await repository.delete(id);
       set((state) => ({ records: { ...state.records, data: state.records.data.filter((r) => r.id !== id) } }));
       if (get().selectedRecord?.id === id) set({ selectedRecord: null });
+      try {
+        await removeHealthRecordExpense(id);
+      } catch (expenseError) {
+        console.warn('Failed to remove health record expense:', expenseError);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete health record';
       set((state) => ({ records: { ...state.records, error: message } }));

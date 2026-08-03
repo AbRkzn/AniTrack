@@ -41,6 +41,7 @@ const CATEGORY_OPTIONS: { label: string; value: ExpenseCategory }[] = [
   { label: 'Utility', value: 'utility' },
   { label: 'Insurance', value: 'insurance' },
   { label: 'Rent', value: 'rent' },
+  { label: 'Veterinary', value: 'veterinary' },
   { label: 'Other', value: 'other' },
 ];
 
@@ -58,6 +59,7 @@ const expenseSchema = z.object({
     'utility',
     'insurance',
     'rent',
+    'veterinary',
     'other',
   ]),
   amount: z.string().refine(

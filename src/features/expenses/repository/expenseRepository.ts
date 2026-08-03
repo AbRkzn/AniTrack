@@ -42,13 +42,18 @@ export class ExpenseRepository {
     return row ? this.mapRowToExpense(row) : null;
   }
 
+  async getByHealthRecordId(healthRecordId: string): Promise<Expense | null> {
+    const row = await queryFirst<any>('SELECT * FROM expenses WHERE healthRecordId = ?', [healthRecordId]);
+    return row ? this.mapRowToExpense(row) : null;
+  }
+
   async create(data: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>): Promise<Expense> {
     const now = new Date().toISOString();
     const id = `exp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await executeSql(
-      'INSERT INTO expenses (id, cropId, category, amount, currency, date, vendor, receiptPhoto, notes, recurring, recurringInterval, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, data.cropId || null, data.category, data.amount, data.currency, data.date, data.vendor || null, data.receiptPhoto || null, data.notes, data.recurring ? 1 : 0, data.recurringInterval || null, now, now]
+      'INSERT INTO expenses (id, cropId, category, amount, currency, date, vendor, receiptPhoto, notes, recurring, recurringInterval, healthRecordId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, data.cropId || null, data.category, data.amount, data.currency, data.date, data.vendor || null, data.receiptPhoto || null, data.notes, data.recurring ? 1 : 0, data.recurringInterval || null, data.healthRecordId || null, now, now]
     );
 
     const expense = await this.getById(id);
@@ -61,7 +66,7 @@ export class ExpenseRepository {
     const updates: string[] = [];
     const params: any[] = [];
 
-    const fields: (keyof typeof data)[] = ['cropId', 'category', 'amount', 'currency', 'date', 'vendor', 'receiptPhoto', 'notes', 'recurring', 'recurringInterval'];
+    const fields: (keyof typeof data)[] = ['cropId', 'category', 'amount', 'currency', 'date', 'vendor', 'receiptPhoto', 'notes', 'recurring', 'recurringInterval', 'healthRecordId'];
 
     for (const field of fields) {
       if (data[field] !== undefined) {
@@ -108,6 +113,7 @@ export class ExpenseRepository {
       notes: row.notes,
       recurring: row.recurring === 1,
       recurringInterval: row.recurringInterval,
+      healthRecordId: row.healthRecordId || undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

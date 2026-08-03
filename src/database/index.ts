@@ -68,6 +68,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       notes TEXT NOT NULL DEFAULT '',
       recurring INTEGER NOT NULL DEFAULT 0,
       recurringInterval TEXT,
+      healthRecordId TEXT,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL,
       FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE SET NULL
@@ -174,6 +175,11 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
   `;
 
   await database.execAsync(schema);
+
+  const expenseColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(expenses)');
+  if (!expenseColumns.some((column) => column.name === 'healthRecordId')) {
+    await database.execAsync('ALTER TABLE expenses ADD COLUMN healthRecordId TEXT');
+  }
 }
 
 export async function closeDatabase(): Promise<void> {

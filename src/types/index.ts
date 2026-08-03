@@ -34,6 +34,7 @@ export type ExpenseCategory =
   | 'utility'
   | 'insurance'
   | 'rent'
+  | 'veterinary'
   | 'other';
 
 export interface Expense {
@@ -46,6 +47,7 @@ export interface Expense {
   vendor?: string;
   receiptPhoto?: string;
   notes: string;
+  healthRecordId?: string;
   recurring: boolean;
   recurringInterval?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   createdAt: string;
@@ -500,7 +502,7 @@ export function isExpenseCategory(value: string): value is ExpenseCategory {
   return [
     'seed', 'fertilizer', 'pesticide', 'equipment', 'labor',
     'irrigation', 'fuel', 'maintenance', 'transport', 'utility',
-    'insurance', 'rent', 'other',
+    'insurance', 'rent', 'veterinary', 'other',
   ].includes(value);
 }
 
