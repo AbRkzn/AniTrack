@@ -160,7 +160,7 @@ const createStyles = (colors: ColorScheme) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.surface },
     container: { flex: 1, backgroundColor: colors.background },
-    summaryRow: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg, paddingBottom: 0 },
+    summaryRow: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
     summaryCard: { flex: 1 },
     budgetBanner: {
       flexDirection: 'row',
@@ -168,7 +168,7 @@ const createStyles = (colors: ColorScheme) =>
       gap: spacing.md,
       backgroundColor: colors.surface,
       marginHorizontal: spacing.lg,
-      marginTop: spacing.md,
+      marginBottom: spacing.md,
       borderRadius: 12,
       padding: spacing.md,
     },
