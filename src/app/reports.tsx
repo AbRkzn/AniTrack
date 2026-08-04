@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, ComponentProps } from 'react';
-import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
@@ -68,9 +68,13 @@ export default function ReportsScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { width: windowWidth } = useWindowDimensions();
   const chartWidth = Math.max(0, windowWidth - spacing.lg * 2);
-  const crops = useCropsStore((s) => s.crops.data);
-  const harvests = useHarvestsStore((s) => s.harvests.data);
-  const expenses = useExpensesStore((s) => s.expenses.data);
+  const cropsState = useCropsStore((s) => s.crops);
+  const harvestsState = useHarvestsStore((s) => s.harvests);
+  const expensesState = useExpensesStore((s) => s.expenses);
+  const crops = cropsState.data;
+  const harvests = harvestsState.data;
+  const expenses = expensesState.data;
+  const loading = cropsState.isLoading || harvestsState.isLoading || expensesState.isLoading;
   const settings = useAppStore((s) => s.settings);
   const currencySymbol = getCurrencySymbol(settings.currency);
 
@@ -119,6 +123,21 @@ export default function ReportsScreen() {
   const yieldData = useMemo(() => yieldComparison(crops, harvests), [crops, harvests]);
 
   const hasData = crops.length > 0 || harvests.length > 0 || expenses.length > 0;
+
+  if (loading && !hasData) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <Header
+          title="AniTrack"
+          subtitle="Reports & Analytics"
+          leftAction={{ icon: 'arrow-back', onPress: () => router.back() }}
+        />
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!hasData) {
     return (
@@ -318,6 +337,7 @@ const createStyles = (colors: ColorScheme) =>
     safe: { flex: 1, backgroundColor: colors.surface },
     container: { flex: 1, backgroundColor: colors.background },
     content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+    loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.xl },
     statHalf: { minWidth: 160, flexGrow: 1 },
     section: { marginBottom: spacing.xl },
