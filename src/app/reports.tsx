@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, ComponentProps } from 'react';
+import React, { useCallback, useMemo, ComponentProps } from 'react';
 import { View, Text, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -96,18 +96,11 @@ export default function ReportsScreen() {
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
 
-  const scrollRef = useRef<ScrollView>(null);
-
   useFocusEffect(
     useCallback(() => {
       fetchCrops();
       fetchHarvests();
       fetchExpenses();
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      const timer = setTimeout(() => {
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-      }, 500);
-      return () => clearTimeout(timer);
     }, [fetchCrops, fetchHarvests, fetchExpenses])
   );
 
@@ -172,7 +165,6 @@ export default function ReportsScreen() {
         leftAction={{ icon: 'arrow-back', onPress: () => router.back() }}
       />
       <ScrollView
-        ref={scrollRef}
         style={styles.container}
         contentContainerStyle={styles.content}
         removeClippedSubviews={false}
