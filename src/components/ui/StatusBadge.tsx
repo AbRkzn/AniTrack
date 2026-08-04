@@ -30,9 +30,9 @@ export function StatusBadge({ status, style }: StatusBadgeProps) {
       case 'ready_for_harvest': return { bg: '#FFF8E1', text: '#F9A825' };
       case 'harvested': return { bg: '#E8F5E9', text: '#66BB6A' };
       case 'failed': return { bg: '#FFEBEE', text: '#D32F2F' };
-      case 'pending': return { bg: '#FFF3E0', text: '#FF9800' };
-      case 'in_progress': return { bg: '#E3F2FD', text: '#2196F3' };
-      case 'completed': return { bg: '#E8F5E9', text: '#4CAF50' };
+      case 'pending': return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'in_progress': return { bg: '#E8F5E9', text: '#2E7D32' };
+      case 'completed': return { bg: '#E8F5E9', text: '#2E7D32' };
       case 'skipped': return { bg: '#F5F5F5', text: '#9E9E9E' };
       case 'active': return { bg: '#E8F5E9', text: '#2E7D32' };
       case 'sold': return { bg: '#E3F2FD', text: '#2196F3' };
