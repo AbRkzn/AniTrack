@@ -40,7 +40,7 @@ export default function CalendarScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { width: windowWidth } = useWindowDimensions();
-  const cellWidth = (windowWidth - spacing.lg * 2) / 7;
+  const cellWidth = (windowWidth - spacing.lg * 2 - spacing.md * 2) / 7;
 
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => dayKey(new Date()));
