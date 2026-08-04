@@ -131,6 +131,11 @@ export default function TasksScreen() {
   const pendingCount = tasks.filter((t) => t.status === 'pending').length;
   const overdueCount = tasks.filter((t) => t.status === 'pending' && isOverdue(t)).length;
 
+  const visibleTasks = useMemo(() => {
+    if (!filters.status) return tasks;
+    return tasks.filter((t) => t.status === filters.status);
+  }, [tasks, filters.status]);
+
   const confirmDelete = useCallback(
     (task: FarmTask) => {
       Alert.alert('Delete Task', `Delete "${task.title}"?`, [
@@ -189,7 +194,7 @@ export default function TasksScreen() {
           />
         ) : (
           <FlatList
-            data={tasks}
+            data={visibleTasks}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TaskCard
