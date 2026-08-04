@@ -6,6 +6,8 @@ import { useTheme } from '../../constants/themeContext';
 export interface ChipOption {
   label: string;
   value: string;
+  activeColor?: string;
+  activeBackgroundColor?: string;
 }
 
 interface ChipSelectProps {
@@ -26,14 +28,16 @@ export function ChipSelect({ label, options, value, onChange, error }: ChipSelec
       <View style={styles.row}>
         {options.map((option) => {
           const selected = option.value === value;
+          const activeColor = option.activeColor ?? colors.primary;
+          const activeBackgroundColor = option.activeBackgroundColor ?? colors.primaryFaded;
           return (
             <TouchableOpacity
               key={option.value}
-              style={[styles.chip, selected && styles.chipSelected]}
+              style={[styles.chip, selected && { borderColor: activeColor, backgroundColor: activeBackgroundColor }]}
               onPress={() => onChange(option.value)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+              <Text style={[styles.chipText, selected && { color: activeColor }]}>{option.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -66,17 +70,9 @@ const createStyles = (colors: ColorScheme) =>
       borderColor: colors.border,
       backgroundColor: colors.surface,
     },
-    chipSelected: {
-      borderColor: colors.primary,
-      backgroundColor: colors.primaryFaded,
-    },
     chipText: {
       ...typography.bodySmall,
       color: colors.textSecondary,
-    },
-    chipTextSelected: {
-      color: colors.primary,
-      fontWeight: '600',
     },
     error: {
       ...typography.caption,

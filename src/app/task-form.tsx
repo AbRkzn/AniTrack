@@ -45,10 +45,10 @@ const PRIORITY_OPTIONS: { label: string; value: TaskPriority }[] = [
   { label: 'High', value: 'high' },
 ];
 
-const STATUS_OPTIONS: { label: string; value: TaskStatus }[] = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Completed', value: 'completed' },
+const STATUS_OPTIONS: { label: string; value: TaskStatus; activeColor: string; activeBackgroundColor: string }[] = [
+  { label: 'Pending', value: 'pending', activeColor: '#1565C0', activeBackgroundColor: '#E3F2FD' },
+  { label: 'In Progress', value: 'in_progress', activeColor: '#F9A825', activeBackgroundColor: '#FFF8E1' },
+  { label: 'Completed', value: 'completed', activeColor: '#2E7D32', activeBackgroundColor: '#E8F5E9' },
 ];
 
 const taskSchema = z.object({

@@ -20,9 +20,9 @@ import { useTaskReminders } from '../hooks/useTaskReminders';
 
 const STATUS_OPTIONS = [
   { label: 'All', value: '__all__' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Completed', value: 'completed' },
+  { label: 'Pending', value: 'pending', activeColor: '#1565C0', activeBackgroundColor: '#E3F2FD' },
+  { label: 'In Progress', value: 'in_progress', activeColor: '#F9A825', activeBackgroundColor: '#FFF8E1' },
+  { label: 'Completed', value: 'completed', activeColor: '#2E7D32', activeBackgroundColor: '#E8F5E9' },
 ];
 
 function getPriorityColor(priority: FarmTask['priority'], colors: ColorScheme): string {
