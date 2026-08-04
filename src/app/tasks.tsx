@@ -23,6 +23,7 @@ const STATUS_OPTIONS = [
   { label: 'Pending', value: 'pending', activeColor: '#1565C0', activeBackgroundColor: '#E3F2FD' },
   { label: 'In Progress', value: 'in_progress', activeColor: '#F9A825', activeBackgroundColor: '#FFF8E1' },
   { label: 'Completed', value: 'completed', activeColor: '#2E7D32', activeBackgroundColor: '#E8F5E9' },
+  { label: 'Cancelled', value: 'cancelled', activeColor: '#D32F2F', activeBackgroundColor: '#FFEBEE' },
 ];
 
 function getPriorityColor(priority: FarmTask['priority'], colors: ColorScheme): string {
