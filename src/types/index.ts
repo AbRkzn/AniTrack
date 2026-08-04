@@ -51,6 +51,7 @@ export interface Expense {
   healthRecordId?: string;
   recurring: boolean;
   recurringInterval?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurringSourceId?: string;
   createdAt: string;
   updatedAt: string;
 }

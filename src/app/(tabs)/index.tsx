@@ -2,10 +2,13 @@ import React, { useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { format } from 'date-fns';
 import { useCropsStore } from '../../store/cropsStore';
 import { useExpensesStore } from '../../store/expensesStore';
 import { useHarvestsStore } from '../../store/harvestsStore';
 import { useAnimalsStore } from '../../store/animalsStore';
+import { useTaskStore } from '../../store/taskStore';
+import { useBudgetStore } from '../../store/budgetStore';
 import { useAppStore } from '../../store/appStore';
 import { StatCard } from '../../components/ui/Card';
 import { Header } from '../../components/ui/Header';
@@ -51,6 +54,8 @@ export default function DashboardScreen() {
   const expenses = useExpensesStore((s) => s.expenses.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
   const animals = useAnimalsStore((s) => s.animals.data);
+  const tasks = useTaskStore((s) => s.tasks.data);
+  const budgets = useBudgetStore((s) => s.budgets.data);
   const isOnline = useAppStore((s) => s.isOnline);
   const settings = useAppStore((s) => s.settings);
 
@@ -58,6 +63,8 @@ export default function DashboardScreen() {
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchAnimals = useAnimalsStore((s) => s.fetchAnimals);
+  const fetchTasks = useTaskStore((s) => s.fetchTasks);
+  const fetchBudgets = useBudgetStore((s) => s.fetchBudgets);
 
   useFocusEffect(
     useCallback(() => {
@@ -65,13 +72,30 @@ export default function DashboardScreen() {
       fetchExpenses();
       fetchHarvests();
       fetchAnimals();
-    }, [fetchCrops, fetchExpenses, fetchHarvests, fetchAnimals])
+      fetchTasks();
+      fetchBudgets();
+    }, [fetchCrops, fetchExpenses, fetchHarvests, fetchAnimals, fetchTasks, fetchBudgets])
   );
 
   const activeCrops = crops.filter((c) => c.status === 'growing').length;
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const today = new Date().toISOString().split('T')[0];
+  const monthKey = format(new Date(), 'yyyy-MM');
+  const monthlyExpenses = expenses.filter((e) => e.date.startsWith(monthKey)).reduce((sum, e) => sum + e.amount, 0);
   const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
   const activeAnimals = animals.filter((a) => a.status === 'active').length;
+  const openTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled').length;
+  const overdueTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && t.dueDate < today);
+  const readyHarvestCrops = crops.filter((c) => c.status === 'ready_for_harvest');
+  const monthBudgets = budgets.filter((b) => b.month === monthKey);
+  const spentByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const expense of expenses) {
+      if (!expense.date.startsWith(monthKey)) continue;
+      map[expense.category] = (map[expense.category] || 0) + expense.amount;
+    }
+    return map;
+  }, [expenses, monthKey]);
+  const overBudgetCount = monthBudgets.filter((b) => (spentByCategory[b.category] || 0) > b.amount).length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -104,11 +128,53 @@ export default function DashboardScreen() {
           <StatCard title="Total Harvests" value={harvests.length} icon="basket" style={styles.statHalf} />
           <StatCard title="Active Animals" value={activeAnimals} icon="paw" style={styles.statHalf} />
           <StatCard title="Total Animals" value={animals.length} icon="paw-outline" style={styles.statHalf} />
-          <StatCard title="Monthly Expenses" value={formatCurrency(totalExpenses, settings.currency)} icon="cash-outline" color={colors.error} style={styles.statHalf} />
+          <StatCard title="Open Tasks" value={openTasks} icon="checkmark-done" color={colors.chartTeal} style={styles.statHalf} />
+          <StatCard title="Monthly Expenses" value={formatCurrency(monthlyExpenses, settings.currency)} icon="cash-outline" color={colors.error} style={styles.statHalf} />
           <StatCard title="Revenue" value={formatCurrency(totalRevenue, settings.currency)} icon="trending-up" color={colors.primary} style={styles.statHalf} />
+          <StatCard title="Over Budget" value={overBudgetCount} icon="warning-outline" color={overBudgetCount > 0 ? colors.error : colors.success} style={styles.statHalf} />
         </View>
 
         <WeatherCard onPress={() => router.push('/weather')} />
+
+        {(overdueTasks.length > 0 || readyHarvestCrops.length > 0 || overBudgetCount > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Needs Attention</Text>
+            <View>
+              {overdueTasks.map((task) => (
+                <TouchableOpacity key={task.id} style={styles.attentionItem} onPress={() => router.push('/tasks')} activeOpacity={0.7}>
+                  <ActivityIcon icon="time-outline" color={colors.error} />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>{task.title}</Text>
+                    <Text style={styles.activitySubtitle}>Overdue task · due {task.dueDate}</Text>
+                  </View>
+                  <Icon name="chevron-forward" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
+              {readyHarvestCrops.map((crop) => (
+                <TouchableOpacity key={crop.id} style={styles.attentionItem} onPress={() => router.push('/crops')} activeOpacity={0.7}>
+                  <ActivityIcon icon="basket" color={colors.warning} />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>{crop.name}</Text>
+                    <Text style={styles.activitySubtitle}>Ready for harvest · expected {crop.expectedHarvestDate}</Text>
+                  </View>
+                  <Icon name="chevron-forward" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
+              {overBudgetCount > 0 && (
+                <TouchableOpacity style={styles.attentionItem} onPress={() => router.push('/budgets')} activeOpacity={0.7}>
+                  <ActivityIcon icon="trending-down" color={colors.error} />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>
+                      {overBudgetCount} categor{overBudgetCount === 1 ? 'y' : 'ies'} over budget
+                    </Text>
+                    <Text style={styles.activitySubtitle}>Review this month's budgets</Text>
+                  </View>
+                  <Icon name="chevron-forward" size={18} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -117,6 +183,7 @@ export default function DashboardScreen() {
             <QuickAction icon="basket" label="Add Harvest" color={colors.warning} onPress={() => router.push('/harvest-form')} />
             <QuickAction icon="wallet" label="Add Expense" color={colors.error} onPress={() => router.push('/expense-form')} />
             <QuickAction icon="flask" label="Fertilizer" color={colors.chartPurple} onPress={() => router.push('/fertilizers')} />
+            <QuickAction icon="calendar" label="Calendar" color={colors.primary} onPress={() => router.push('/calendar')} />
             <QuickAction icon="checkmark-done" label="Tasks" color={colors.chartTeal} onPress={() => router.push('/tasks')} />
             <QuickAction icon="map" label="Fields" color={colors.chartBlue} onPress={() => router.push('/fields')} />
           </View>
@@ -213,6 +280,15 @@ const createStyles = (colors: ColorScheme) =>
       alignItems: 'center',
     },
     actionLabel: { ...typography.bodySmall, fontWeight: '600', color: colors.textPrimary },
+    attentionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+      gap: spacing.md,
+    },
     emptyContainer: { alignItems: 'center', paddingVertical: spacing.xxxl },
     emptyIconTile: {
       width: 64,

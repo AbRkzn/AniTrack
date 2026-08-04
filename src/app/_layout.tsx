@@ -46,6 +46,7 @@ function RootNavigator({ ready }: { ready: boolean }) {
         <Stack.Screen name="task-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="field-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="calendar" />
       </Stack>
     </>
   );

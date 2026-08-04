@@ -219,6 +219,9 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
   if (!expenseColumns.some((column) => column.name === 'healthRecordId')) {
     await database.execAsync('ALTER TABLE expenses ADD COLUMN healthRecordId TEXT');
   }
+  if (!expenseColumns.some((column) => column.name === 'recurringSourceId')) {
+    await database.execAsync('ALTER TABLE expenses ADD COLUMN recurringSourceId TEXT');
+  }
 
   const cropColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(crops)');
   if (!cropColumns.some((column) => column.name === 'fieldId')) {

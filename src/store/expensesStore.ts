@@ -27,6 +27,7 @@ export const useExpensesStore = create<ExpensesState>((set, get) => ({
   fetchExpenses: async () => {
     set((state) => ({ expenses: { ...state.expenses, isLoading: true, error: null } }));
     try {
+      await expenseRepository.generateRecurringInstances();
       const data = await expenseRepository.getAll(get().filters);
       set({ expenses: { data, isLoading: false, error: null } });
     } catch (error) {

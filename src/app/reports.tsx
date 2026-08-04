@@ -18,6 +18,7 @@ import {
   groupExpensesByCategory,
   groupRevenueByMonth,
   groupExpensesByMonth,
+  groupProfitLossByMonth,
   yieldComparison,
   getChartColor,
 } from '../utils/reports';
@@ -131,6 +132,7 @@ export default function ReportsScreen() {
   const expenseByCategory = useMemo(() => groupExpensesByCategory(filtered.expenses), [filtered.expenses]);
   const revenueByMonth = useMemo(() => groupRevenueByMonth(filtered.harvests), [filtered.harvests]);
   const expensesByMonth = useMemo(() => groupExpensesByMonth(filtered.expenses), [filtered.expenses]);
+  const profitLoss = useMemo(() => groupProfitLossByMonth(filtered.harvests, filtered.expenses), [filtered.harvests, filtered.expenses]);
   const yieldData = useMemo(() => yieldComparison(filtered.crops, filtered.harvests), [filtered.crops, filtered.harvests]);
 
   const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0;
@@ -246,6 +248,64 @@ export default function ReportsScreen() {
             style={styles.statHalf}
           />
         </View>
+
+        <ChartSection
+          title="Profit & Loss"
+          subtitle={`Monthly revenue vs expenses · net ${formatCurrency(totals.net, settings.currency)}`}
+        >
+          {profitLoss.labels.length > 0 ? (
+            <View>
+              <View style={styles.legendRow}>
+                <LegendDot color={colors.primary} />
+                <Text style={styles.legendText}>Revenue</Text>
+                <LegendDot color={colors.error} />
+                <Text style={styles.legendText}>Expenses</Text>
+              </View>
+              <BarChart
+                data={{
+                  labels: profitLoss.labels,
+                  datasets: [
+                    {
+                      data: profitLoss.revenue,
+                      color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                    },
+                    {
+                      data: profitLoss.expenses,
+                      color: (opacity = 1) => `rgba(217, 48, 48, ${opacity})`,
+                    },
+                  ],
+                }}
+                width={chartWidth}
+                height={CHART_HEIGHT}
+                chartConfig={{
+                  ...chartConfig,
+                  color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                }}
+                fromZero
+                showValuesOnTopOfBars
+                yAxisLabel=""
+                yAxisSuffix={currencySymbol}
+              />
+              <View style={styles.pnlList}>
+                {profitLoss.labels.map((label, index) => {
+                  const net = profitLoss.net[index];
+                  return (
+                    <View key={label} style={styles.pnlRow}>
+                      <Text style={styles.pnlMonth}>{label}</Text>
+                      <Text style={styles.pnlValue}>{formatCurrency(profitLoss.revenue[index], settings.currency)}</Text>
+                      <Text style={styles.pnlValue}>{formatCurrency(profitLoss.expenses[index], settings.currency)}</Text>
+                      <Text style={[styles.pnlNet, { color: net >= 0 ? colors.success : colors.error }]}>
+                        {formatCurrency(net, settings.currency)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          ) : (
+            <ChartEmpty message="No revenue or expenses recorded yet." />
+          )}
+        </ChartSection>
 
         <ChartSection
           title="Revenue Over Time"
@@ -410,4 +470,17 @@ const createStyles = (colors: ColorScheme) =>
     legendRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md },
     legendDot: { width: 10, height: 10, borderRadius: 5, marginRight: spacing.xs, marginLeft: spacing.md },
     legendText: { ...typography.caption, color: colors.textSecondary, marginRight: spacing.sm },
+    pnlList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+    pnlRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+      gap: spacing.sm,
+    },
+    pnlMonth: { ...typography.bodySmall, fontWeight: '600', color: colors.textPrimary, width: 56 },
+    pnlValue: { ...typography.caption, color: colors.textSecondary, flex: 1, textAlign: 'right' },
+    pnlNet: { ...typography.bodySmall, fontWeight: '700', flex: 1, textAlign: 'right' },
   });

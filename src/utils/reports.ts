@@ -60,6 +60,41 @@ export function groupExpensesByMonth(expenses: Expense[]): ChartDataPoint[] {
   return groupByMonth(expenses.map((e) => ({ date: e.date, value: e.amount })));
 }
 
+export interface MonthlyProfitLoss {
+  labels: string[];
+  revenue: number[];
+  expenses: number[];
+  net: number[];
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function groupProfitLossByMonth(harvests: Harvest[], expenses: Expense[]): MonthlyProfitLoss {
+  const revenueByMonth = new Map<string, number>();
+  const expensesByMonth = new Map<string, number>();
+
+  for (const harvest of harvests) {
+    if (harvest.revenue == null) continue;
+    const key = harvest.harvestDate.slice(0, 7);
+    revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + harvest.revenue);
+  }
+  for (const expense of expenses) {
+    const key = expense.date.slice(0, 7);
+    expensesByMonth.set(key, (expensesByMonth.get(key) || 0) + expense.amount);
+  }
+
+  const keys = Array.from(new Set([...revenueByMonth.keys(), ...expensesByMonth.keys()])).sort();
+
+  return {
+    labels: keys.map((key) => format(parseISO(`${key}-01`), 'MMM yy')),
+    revenue: keys.map((key) => round2(revenueByMonth.get(key) || 0)),
+    expenses: keys.map((key) => round2(expensesByMonth.get(key) || 0)),
+    net: keys.map((key) => round2((revenueByMonth.get(key) || 0) - (expensesByMonth.get(key) || 0))),
+  };
+}
+
 export interface YieldComparisonData {
   labels: string[];
   actual: number[];
