@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, ComponentProps } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import React, { useCallback, useMemo, useRef, ComponentProps } from 'react';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
@@ -22,8 +22,6 @@ import {
 } from '../utils/reports';
 
 const CHART_HEIGHT = 200;
-const screenWidth = Dimensions.get('window').width;
-const chartWidth = screenWidth - spacing.lg * 2;
 
 interface ChartSectionProps {
   title: string;
@@ -68,6 +66,8 @@ export default function ReportsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { width: windowWidth } = useWindowDimensions();
+  const chartWidth = Math.max(0, windowWidth - spacing.lg * 2);
   const crops = useCropsStore((s) => s.crops.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
   const expenses = useExpensesStore((s) => s.expenses.data);
@@ -92,11 +92,18 @@ export default function ReportsScreen() {
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
 
+  const scrollRef = useRef<ScrollView>(null);
+
   useFocusEffect(
     useCallback(() => {
       fetchCrops();
       fetchHarvests();
       fetchExpenses();
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 500);
+      return () => clearTimeout(timer);
     }, [fetchCrops, fetchHarvests, fetchExpenses])
   );
 
@@ -145,7 +152,12 @@ export default function ReportsScreen() {
         subtitle="Reports & Analytics"
         leftAction={{ icon: 'arrow-back', onPress: () => router.back() }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        removeClippedSubviews={false}
+      >
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Revenue"
