@@ -51,7 +51,10 @@ export default function CalendarScreen() {
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchCrops = useCropsStore((s) => s.fetchCrops);
-  const isLoading = useTaskStore((s) => s.tasks.isLoading) || useHarvestsStore((s) => s.harvests.isLoading) || useCropsStore((s) => s.crops.isLoading);
+  const tasksLoading = useTaskStore((s) => s.tasks.isLoading);
+  const harvestsLoading = useHarvestsStore((s) => s.harvests.isLoading);
+  const cropsLoading = useCropsStore((s) => s.crops.isLoading);
+  const isLoading = tasksLoading || harvestsLoading || cropsLoading;
 
   useFocusEffect(
     useCallback(() => {
