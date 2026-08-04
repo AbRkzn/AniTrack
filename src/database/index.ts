@@ -172,6 +172,45 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       createdAt TEXT NOT NULL,
       FOREIGN KEY (animalId) REFERENCES animals(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS fields (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      acreage REAL NOT NULL DEFAULT 0,
+      soilType TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS farm_tasks (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT 'other',
+      priority TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'pending',
+      dueDate TEXT NOT NULL,
+      cropId TEXT,
+      fieldId TEXT,
+      assignedTo TEXT,
+      reminderEnabled INTEGER NOT NULL DEFAULT 0,
+      reminderDate TEXT,
+      completedDate TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (cropId) REFERENCES crops(id) ON DELETE SET NULL,
+      FOREIGN KEY (fieldId) REFERENCES fields(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL,
+      amount REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'PHP',
+      month TEXT NOT NULL,
+      notes TEXT NOT NULL DEFAULT '',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      UNIQUE (category, month)
+    );
   `;
 
   await database.execAsync(schema);
@@ -179,6 +218,11 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
   const expenseColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(expenses)');
   if (!expenseColumns.some((column) => column.name === 'healthRecordId')) {
     await database.execAsync('ALTER TABLE expenses ADD COLUMN healthRecordId TEXT');
+  }
+
+  const cropColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(crops)');
+  if (!cropColumns.some((column) => column.name === 'fieldId')) {
+    await database.execAsync('ALTER TABLE crops ADD COLUMN fieldId TEXT');
   }
 }
 

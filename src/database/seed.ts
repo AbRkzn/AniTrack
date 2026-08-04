@@ -4,7 +4,10 @@ import { HarvestRepository } from '../features/harvests/repository/harvestReposi
 import { ExpenseRepository } from '../features/expenses/repository/expenseRepository';
 import { AnimalRepository } from '../features/animals/repository/animalRepository';
 import { AnimalHealthRecordRepository } from '../features/animals/repository/animalHealthRecordRepository';
-import { Crop, Harvest, Expense, Animal, AnimalHealthRecord } from '../types';
+import { FieldRepository } from '../features/fields/repository/fieldRepository';
+import { TaskRepository } from '../features/tasks/repository/taskRepository';
+import { BudgetRepository } from '../features/budgets/repository/budgetRepository';
+import { Crop, Harvest, Expense, Animal, AnimalHealthRecord, Field, FarmTask, Budget } from '../types';
 
 const SEED_FLAG = 'sample_data_seeded';
 
@@ -13,12 +16,78 @@ const harvestRepository = new HarvestRepository();
 const expenseRepository = new ExpenseRepository();
 const animalRepository = new AnimalRepository();
 const healthRepository = new AnimalHealthRecordRepository();
+const fieldRepository = new FieldRepository();
+const taskRepository = new TaskRepository();
+const budgetRepository = new BudgetRepository();
 
-const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
+const SAMPLE_FIELDS: Omit<Field, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  { name: 'North Field', acreage: 2.5, soilType: 'Clay loam', notes: 'Main maize plot.' },
+  { name: 'East Field', acreage: 3, soilType: 'Loam', notes: '' },
+  { name: 'Greenhouse A', acreage: 0.5, soilType: 'Potting mix', notes: 'Protected cropping.' },
+  { name: 'West Field', acreage: 1.8, soilType: 'Silt loam', notes: '' },
+];
+
+type SampleTask = Omit<FarmTask, 'id' | 'createdAt' | 'updatedAt' | 'cropId' | 'fieldId'> & {
+  cropName?: string;
+  fieldName?: string;
+};
+
+const SAMPLE_TASKS: SampleTask[] = [
+  {
+    title: 'Top-dress maize with urea',
+    description: 'Apply second round of urea to the standing maize.',
+    category: 'fertilizing',
+    priority: 'high',
+    status: 'pending',
+    dueDate: '2026-08-06',
+    cropName: 'Maize',
+    fieldName: 'North Field',
+    assignedTo: '',
+    reminderEnabled: true,
+    reminderDate: '2026-08-05',
+  },
+  {
+    title: 'Harvest ripe tomatoes',
+    description: 'Third picking round, target 300kg for the local market.',
+    category: 'harvesting',
+    priority: 'medium',
+    status: 'in_progress',
+    dueDate: '2026-08-04',
+    cropName: 'Tomatoes',
+    fieldName: 'Greenhouse A',
+    assignedTo: 'Farmhands',
+    reminderEnabled: true,
+    reminderDate: '2026-08-03',
+  },
+  {
+    title: 'Irrigation pump service',
+    description: 'Check filters and refill fuel before the dry spell.',
+    category: 'maintenance',
+    priority: 'medium',
+    status: 'pending',
+    dueDate: '2026-08-10',
+    cropName: undefined,
+    fieldName: undefined,
+    assignedTo: '',
+    reminderEnabled: false,
+    reminderDate: undefined,
+  },
+];
+
+const SAMPLE_BUDGETS: Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  { category: 'fertilizer', amount: 200, currency: 'PHP', month: '2026-08', notes: '' },
+  { category: 'labor', amount: 300, currency: 'PHP', month: '2026-08', notes: '' },
+  { category: 'fuel', amount: 150, currency: 'PHP', month: '2026-08', notes: '' },
+];
+
+type SampleCrop = Omit<Crop, 'id' | 'createdAt' | 'updatedAt' | 'fieldId'> & { fieldName?: string };
+
+const SAMPLE_CROPS: SampleCrop[] = [
   {
     name: 'Maize',
     variety: 'SC 403',
     fieldLocation: 'North Field, Plot 1',
+    fieldName: 'North Field',
     plantingDate: '2026-04-10',
     expectedHarvestDate: '2026-08-15',
     status: 'growing',
@@ -31,6 +100,7 @@ const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
     name: 'Tomatoes',
     variety: 'Roma',
     fieldLocation: 'Greenhouse A',
+    fieldName: 'Greenhouse A',
     plantingDate: '2026-05-01',
     expectedHarvestDate: '2026-08-01',
     status: 'ready_for_harvest',
@@ -43,6 +113,7 @@ const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
     name: 'Soybeans',
     variety: 'TGx 1448-2E',
     fieldLocation: 'East Field, Plot 3',
+    fieldName: 'East Field',
     plantingDate: '2026-03-20',
     expectedHarvestDate: '2026-07-28',
     actualHarvestDate: '2026-07-30',
@@ -56,6 +127,7 @@ const SAMPLE_CROPS: Omit<Crop, 'id' | 'createdAt' | 'updatedAt'>[] = [
     name: 'Cabbage',
     variety: 'Gloria F1',
     fieldLocation: 'West Plot, Plot 2',
+    fieldName: 'West Field',
     plantingDate: '2026-06-01',
     expectedHarvestDate: '2026-09-20',
     status: 'growing',
@@ -170,13 +242,43 @@ const SAMPLE_EXPENSES: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>[] = [
   },
 ];
 
-async function insertCrops(): Promise<Record<string, string>> {
+async function insertFields(): Promise<Record<string, string>> {
+  const ids: Record<string, string> = {};
+  for (const field of SAMPLE_FIELDS) {
+    const created = await fieldRepository.create(field);
+    ids[field.name] = created.id;
+  }
+  return ids;
+}
+
+async function insertCrops(fieldIds: Record<string, string>): Promise<Record<string, string>> {
   const ids: Record<string, string> = {};
   for (const crop of SAMPLE_CROPS) {
-    const created = await cropRepository.create(crop);
+    const { fieldName, ...payload } = crop;
+    const created = await cropRepository.create({
+      ...payload,
+      fieldId: fieldName ? fieldIds[fieldName] : undefined,
+    });
     ids[crop.name] = created.id;
   }
   return ids;
+}
+
+async function insertTasks(cropIds: Record<string, string>, fieldIds: Record<string, string>): Promise<void> {
+  for (const task of SAMPLE_TASKS) {
+    const { cropName, fieldName, ...payload } = task;
+    await taskRepository.create({
+      ...payload,
+      cropId: cropName ? cropIds[cropName] : undefined,
+      fieldId: fieldName ? fieldIds[fieldName] : undefined,
+    });
+  }
+}
+
+async function insertBudgets(): Promise<void> {
+  for (const budget of SAMPLE_BUDGETS) {
+    await budgetRepository.create(budget);
+  }
 }
 
 async function insertHarvests(cropIds: Record<string, string>): Promise<void> {
@@ -662,6 +764,9 @@ export async function clearAppData(): Promise<void> {
   await db.runAsync('DELETE FROM fertilizer_schedules');
   await db.runAsync('DELETE FROM expenses');
   await db.runAsync('DELETE FROM crops');
+  await db.runAsync('DELETE FROM farm_tasks');
+  await db.runAsync('DELETE FROM budgets');
+  await db.runAsync('DELETE FROM fields');
   await db.runAsync('DELETE FROM animal_health_records');
   await db.runAsync('DELETE FROM animals');
   await db.runAsync('DELETE FROM settings WHERE key = ?', [SEED_FLAG]);
@@ -669,9 +774,12 @@ export async function clearAppData(): Promise<void> {
 
 async function insertSampleData(): Promise<void> {
   const db = await getDatabase();
-  const cropIds = await insertCrops();
+  const fieldIds = await insertFields();
+  const cropIds = await insertCrops(fieldIds);
   await insertHarvests(cropIds);
   await insertExpenses(cropIds);
+  await insertTasks(cropIds, fieldIds);
+  await insertBudgets();
   const animalIds = await insertAnimals();
   await insertHealthRecords(animalIds);
 

@@ -9,6 +9,7 @@ export interface Crop {
   name: string;
   variety: string;
   fieldLocation: string;
+  fieldId?: string;
   plantingDate: string;
   expectedHarvestDate: string;
   actualHarvestDate?: string;
@@ -114,6 +115,41 @@ export interface Field {
   acreage: number;
   soilType?: string;
   notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TaskCategory = 'planting' | 'watering' | 'fertilizing' | 'pest_control' | 'harvesting' | 'maintenance' | 'administrative' | 'other';
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface FarmTask {
+  id: string;
+  title: string;
+  description: string;
+  category: TaskCategory;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate: string;
+  cropId?: string;
+  fieldId?: string;
+  assignedTo?: string;
+  reminderEnabled: boolean;
+  reminderDate?: string;
+  completedDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Budget {
+  id: string;
+  category: ExpenseCategory;
+  amount: number;
+  currency: string;
+  month: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -292,6 +328,9 @@ export type FertilizerFormData = Omit<FertilizerApplication, 'id' | 'createdAt' 
 export type HarvestFormData = Omit<Harvest, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalFormData = Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalHealthFormData = Omit<AnimalHealthRecord, 'id' | 'createdAt'>;
+export type FieldFormData = Omit<Field, 'id' | 'createdAt' | 'updatedAt'>;
+export type TaskFormData = Omit<FarmTask, 'id' | 'createdAt' | 'updatedAt'>;
+export type BudgetFormData = Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>;
 
 // ---------------------------------------------------------------------------
 // Repository Types
@@ -315,6 +354,7 @@ export interface QueryOptions {
 export interface CropQuery extends QueryOptions {
   status?: CropStatus;
   search?: string;
+  fieldId?: string;
 }
 
 export interface ExpenseQuery extends QueryOptions {
@@ -348,6 +388,24 @@ export interface AnimalHealthQuery extends QueryOptions {
   type?: AnimalHealthType;
   dateFrom?: string;
   dateTo?: string;
+}
+
+export interface TaskQuery extends QueryOptions {
+  status?: TaskStatus;
+  category?: TaskCategory;
+  cropId?: string;
+  fieldId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface BudgetQuery extends QueryOptions {
+  category?: ExpenseCategory;
+  month?: string;
+}
+
+export interface FieldQuery extends QueryOptions {
+  search?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -437,6 +495,8 @@ export type DatabaseTable =
   | 'harvests'
   | 'weather_records'
   | 'fields'
+  | 'farm_tasks'
+  | 'budgets'
   | 'animals'
   | 'animal_health_records'
   | 'sync_queue'

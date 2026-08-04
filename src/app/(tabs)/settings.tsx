@@ -298,6 +298,11 @@ export default function SettingsScreen() {
             icon="file-tray-outline"
             onPress={onImportBackup}
           />
+          <SettingRow
+            label="Export Data (CSV)"
+            icon="download-outline"
+            onPress={() => router.push('/export')}
+          />
         </Card>
 
         <Text style={styles.sectionTitle}>Weather</Text>

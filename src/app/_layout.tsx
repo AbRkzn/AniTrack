@@ -42,6 +42,10 @@ function RootNavigator({ ready }: { ready: boolean }) {
         <Stack.Screen name="fertilizer-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="animal-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="health-record-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="export" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="task-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="field-form" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );
@@ -55,7 +59,10 @@ export default function RootLayout() {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     configureNotifications().catch(() => {});
-    setupNotificationTapHandling(() => router.push('/crops'))
+    setupNotificationTapHandling(
+      () => router.push('/crops'),
+      () => router.push('/tasks')
+    )
       .then((fn) => {
         unsubscribe = fn;
       })

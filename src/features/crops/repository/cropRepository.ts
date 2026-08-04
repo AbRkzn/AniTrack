@@ -18,6 +18,11 @@ export class CropRepository {
       params.push(search, search, search);
     }
 
+    if (query?.fieldId) {
+      conditions.push('fieldId = ?');
+      params.push(query.fieldId);
+    }
+
     if (conditions.length > 0) {
       sql += ' WHERE ' + conditions.join(' AND ');
     }
@@ -48,9 +53,9 @@ export class CropRepository {
     const photos = JSON.stringify(data.photos || []);
 
     await executeSql(
-      'INSERT INTO crops (id, name, variety, fieldLocation, plantingDate, expectedHarvestDate, actualHarvestDate, status, notes, photos, yieldEstimate, yieldUnit, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO crops (id, name, variety, fieldLocation, fieldId, plantingDate, expectedHarvestDate, actualHarvestDate, status, notes, photos, yieldEstimate, yieldUnit, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
-        id, data.name, data.variety, data.fieldLocation, data.plantingDate,
+        id, data.name, data.variety, data.fieldLocation, data.fieldId || null, data.plantingDate,
         data.expectedHarvestDate, data.actualHarvestDate || null, data.status,
         data.notes, photos, data.yieldEstimate, data.yieldUnit, now, now
       ]
@@ -66,7 +71,7 @@ export class CropRepository {
     const updates: string[] = [];
     const params: any[] = [];
 
-    const fields: (keyof typeof data)[] = ['name', 'variety', 'fieldLocation', 'plantingDate', 'expectedHarvestDate', 'actualHarvestDate', 'status', 'notes', 'photos', 'yieldEstimate', 'yieldUnit'];
+    const fields: (keyof typeof data)[] = ['name', 'variety', 'fieldLocation', 'fieldId', 'plantingDate', 'expectedHarvestDate', 'actualHarvestDate', 'status', 'notes', 'photos', 'yieldEstimate', 'yieldUnit'];
 
     for (const field of fields) {
       if (data[field] !== undefined) {
@@ -107,6 +112,7 @@ export class CropRepository {
       name: row.name,
       variety: row.variety,
       fieldLocation: row.fieldLocation,
+      fieldId: row.fieldId || undefined,
       plantingDate: row.plantingDate,
       expectedHarvestDate: row.expectedHarvestDate,
       actualHarvestDate: row.actualHarvestDate,

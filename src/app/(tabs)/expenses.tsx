@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
+import { format } from 'date-fns';
 import { useExpensesStore } from '../../store/expensesStore';
+import { useBudgetStore } from '../../store/budgetStore';
 import { useAppStore } from '../../store/appStore';
 import { Header } from '../../components/ui/Header';
 import { Card, StatCard } from '../../components/ui/Card';
@@ -48,15 +50,30 @@ export default function ExpensesScreen() {
   const error = useExpensesStore((s) => s.expenses.error);
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
   const deleteExpense = useExpensesStore((s) => s.deleteExpense);
+  const budgets = useBudgetStore((s) => s.budgets.data);
+  const fetchBudgets = useBudgetStore((s) => s.fetchBudgets);
   const currency = useAppStore((s) => s.settings.currency);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const categoryCount = new Set(expenses.map((e) => e.category)).size.toString();
   const subtitle = `${expenses.length} records`;
 
+  const monthKey = format(new Date(), 'yyyy-MM');
+  const monthBudgets = useMemo(() => budgets.filter((b) => b.month === monthKey), [budgets, monthKey]);
+  const spentByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const expense of expenses) {
+      if (!expense.date.startsWith(monthKey)) continue;
+      map[expense.category] = (map[expense.category] || 0) + expense.amount;
+    }
+    return map;
+  }, [expenses, monthKey]);
+  const overBudgetCount = monthBudgets.filter((b) => (spentByCategory[b.category] || 0) > b.amount).length;
+
   useFocusEffect(
     useCallback(() => {
       fetchExpenses();
-    }, [fetchExpenses])
+      fetchBudgets();
+    }, [fetchExpenses, fetchBudgets])
   );
 
   const confirmDelete = useCallback(
@@ -87,6 +104,22 @@ export default function ExpensesScreen() {
           <StatCard title="Total Expenses" value={formatCurrency(totalExpenses, currency)} icon="cash-outline" color={colors.error} style={styles.summaryCard} />
           <StatCard title="Categories" value={categoryCount} icon="pricetag-outline" style={styles.summaryCard} />
         </View>
+        {monthBudgets.length > 0 && (
+          <TouchableOpacity style={styles.budgetBanner} onPress={() => router.push('/budgets')} activeOpacity={0.8}>
+            <View style={styles.budgetBannerIcon}>
+              <Icon name="pie-chart-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.budgetBannerContent}>
+              <Text style={styles.budgetBannerTitle}>
+                {overBudgetCount > 0 ? `${overBudgetCount} categor${overBudgetCount === 1 ? 'y' : 'ies'} over budget` : 'On budget this month'}
+              </Text>
+              <Text style={styles.budgetBannerSubtitle}>
+                {monthBudgets.length} budget{monthBudgets.length === 1 ? '' : 's'} set · tap to manage
+              </Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color={colors.textTertiary} />
+          </TouchableOpacity>
+        )}
         {error && <Text style={styles.errorText}>{error}</Text>}
         {expenses.length === 0 && !isLoading ? (
           <EmptyState
@@ -127,8 +160,29 @@ const createStyles = (colors: ColorScheme) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.surface },
     container: { flex: 1, backgroundColor: colors.background },
-    summaryRow: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+    summaryRow: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg, paddingBottom: 0 },
     summaryCard: { flex: 1 },
+    budgetBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.md,
+      borderRadius: 12,
+      padding: spacing.md,
+    },
+    budgetBannerIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: colors.primaryFaded,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    budgetBannerContent: { flex: 1 },
+    budgetBannerTitle: { ...typography.bodySmall, fontWeight: '600', color: colors.textPrimary },
+    budgetBannerSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     list: { padding: spacing.lg, paddingTop: 0 },
     expenseCard: { marginBottom: spacing.md },
     expenseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },

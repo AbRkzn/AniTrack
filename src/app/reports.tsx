@@ -1,16 +1,17 @@
-import React, { useCallback, useMemo, ComponentProps } from 'react';
-import { View, Text, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
+import React, { useCallback, useMemo, useState, ComponentProps } from 'react';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
 import { useCropsStore } from '../store/cropsStore';
 import { useHarvestsStore } from '../store/harvestsStore';
 import { useExpensesStore } from '../store/expensesStore';
+import { useFieldsStore } from '../store/fieldsStore';
 import { useAppStore } from '../store/appStore';
 import { Header } from '../components/ui/Header';
 import { Card, StatCard } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
-import { typography, spacing, ColorScheme } from '../constants/theme';
+import { typography, spacing, borderRadius, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
 import { formatCurrency, getCurrencySymbol } from '../utils/helpers';
 import {
@@ -77,6 +78,9 @@ export default function ReportsScreen() {
   const loading = cropsState.isLoading || harvestsState.isLoading || expensesState.isLoading;
   const settings = useAppStore((s) => s.settings);
   const currencySymbol = getCurrencySymbol(settings.currency);
+  const fields = useFieldsStore((s) => s.fields.data);
+  const fetchFields = useFieldsStore((s) => s.fetchFields);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
   const chartConfig = useMemo<NonNullable<ComponentProps<typeof LineChart>['chartConfig']>>(
     () => ({
@@ -101,21 +105,35 @@ export default function ReportsScreen() {
       fetchCrops();
       fetchHarvests();
       fetchExpenses();
-    }, [fetchCrops, fetchHarvests, fetchExpenses])
+      fetchFields();
+    }, [fetchCrops, fetchHarvests, fetchExpenses, fetchFields])
   );
 
+  const filtered = useMemo(() => {
+    if (!selectedFieldId) {
+      return { crops, harvests, expenses };
+    }
+    const fieldCrops = crops.filter((c) => c.fieldId === selectedFieldId);
+    const cropIds = new Set(fieldCrops.map((c) => c.id));
+    return {
+      crops: fieldCrops,
+      harvests: harvests.filter((h) => cropIds.has(h.cropId)),
+      expenses: expenses.filter((e) => e.cropId && cropIds.has(e.cropId)),
+    };
+  }, [selectedFieldId, crops, harvests, expenses]);
+
   const totals = useMemo(() => {
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
+    const totalExpenses = filtered.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalRevenue = filtered.harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
     return { totalExpenses, totalRevenue, net: totalRevenue - totalExpenses };
-  }, [expenses, harvests]);
+  }, [filtered]);
 
-  const expenseByCategory = useMemo(() => groupExpensesByCategory(expenses), [expenses]);
-  const revenueByMonth = useMemo(() => groupRevenueByMonth(harvests), [harvests]);
-  const expensesByMonth = useMemo(() => groupExpensesByMonth(expenses), [expenses]);
-  const yieldData = useMemo(() => yieldComparison(crops, harvests), [crops, harvests]);
+  const expenseByCategory = useMemo(() => groupExpensesByCategory(filtered.expenses), [filtered.expenses]);
+  const revenueByMonth = useMemo(() => groupRevenueByMonth(filtered.harvests), [filtered.harvests]);
+  const expensesByMonth = useMemo(() => groupExpensesByMonth(filtered.expenses), [filtered.expenses]);
+  const yieldData = useMemo(() => yieldComparison(filtered.crops, filtered.harvests), [filtered.crops, filtered.harvests]);
 
-  const hasData = crops.length > 0 || harvests.length > 0 || expenses.length > 0;
+  const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0;
 
   if (loading && !hasData) {
     return (
@@ -143,7 +161,11 @@ export default function ReportsScreen() {
         <EmptyState
           icon="stats-chart-outline"
           title="No Reports Yet"
-          message="Add crops, harvests, and expenses to unlock analytics like expense breakdowns, revenue trends, and yield comparisons."
+          message={
+            selectedFieldId
+              ? 'No crops, harvests, or expenses linked to the selected field yet.'
+              : 'Add crops, harvests, and expenses to unlock analytics like expense breakdowns, revenue trends, and yield comparisons.'
+          }
         />
       </SafeAreaView>
     );
@@ -169,6 +191,32 @@ export default function ReportsScreen() {
         contentContainerStyle={styles.content}
         removeClippedSubviews={false}
       >
+        {fields.length > 0 && (
+          <View style={styles.filterRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              <TouchableOpacity
+                style={[styles.filterChip, selectedFieldId === null && styles.filterChipActive]}
+                onPress={() => setSelectedFieldId(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterChipText, selectedFieldId === null && styles.filterChipTextActive]}>All Fields</Text>
+              </TouchableOpacity>
+              {fields.map((field) => {
+                const active = selectedFieldId === field.id;
+                return (
+                  <TouchableOpacity
+                    key={field.id}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                    onPress={() => setSelectedFieldId(active ? null : field.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{field.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Revenue"
@@ -332,6 +380,22 @@ const createStyles = (colors: ColorScheme) =>
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.xl },
     statHalf: { minWidth: 160, flexGrow: 1 },
+    filterRow: { marginBottom: spacing.md },
+    filterScroll: { gap: spacing.sm },
+    filterChip: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: borderRadius.full,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    filterChipText: { ...typography.label, color: colors.textSecondary },
+    filterChipTextActive: { color: colors.white, fontWeight: '600' },
     section: { marginBottom: spacing.xl },
     sectionTitle: { ...typography.h4, color: colors.textPrimary, marginBottom: spacing.xs },
     sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.md },

@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCropsStore } from '../store/cropsStore';
+import { useFieldsStore } from '../store/fieldsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
 import { ChipSelect } from '../components/ui/ChipSelect';
@@ -37,6 +38,7 @@ const cropSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   variety: z.string(),
   fieldLocation: z.string(),
+  fieldId: z.string(),
   plantingDate: z.string().regex(DATE_RE, 'Use YYYY-MM-DD'),
   expectedHarvestDate: z.string().regex(DATE_RE, 'Use YYYY-MM-DD'),
   status: z.enum(['growing', 'ready_for_harvest', 'harvested', 'failed']),
@@ -47,6 +49,7 @@ const cropSchema = z.object({
 
 type CropFormValues = z.infer<typeof cropSchema>;
 
+const NONE = '__none__';
 const today = () => new Date().toISOString().split('T')[0];
 
 export default function CropFormScreen() {
@@ -58,6 +61,8 @@ export default function CropFormScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { addCrop, updateCrop, deleteCrop, getCropById } = useCropsStore();
+  const fields = useFieldsStore((s) => s.fields.data);
+  const fetchFields = useFieldsStore((s) => s.fetchFields);
 
   const {
     register,
@@ -72,6 +77,7 @@ export default function CropFormScreen() {
       name: '',
       variety: '',
       fieldLocation: '',
+      fieldId: NONE,
       plantingDate: today(),
       expectedHarvestDate: today(),
       status: 'growing',
@@ -85,6 +91,10 @@ export default function CropFormScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
+    if (fields.length === 0) fetchFields();
+  }, [fields.length, fetchFields]);
+
+  useEffect(() => {
     if (!isEditing) return;
     let mounted = true;
     (async () => {
@@ -95,6 +105,7 @@ export default function CropFormScreen() {
           name: crop.name,
           variety: crop.variety ?? '',
           fieldLocation: crop.fieldLocation ?? '',
+          fieldId: crop.fieldId || NONE,
           plantingDate: crop.plantingDate,
           expectedHarvestDate: crop.expectedHarvestDate,
           status: crop.status,
@@ -117,6 +128,7 @@ export default function CropFormScreen() {
         name: values.name.trim(),
         variety: values.variety.trim(),
         fieldLocation: values.fieldLocation.trim(),
+        fieldId: values.fieldId && values.fieldId !== NONE ? values.fieldId : undefined,
         plantingDate: values.plantingDate,
         expectedHarvestDate: values.expectedHarvestDate,
         status: values.status,
@@ -163,6 +175,8 @@ export default function CropFormScreen() {
     );
   }
 
+  const fieldOptions = [{ label: 'None', value: NONE }, ...fields.map((f) => ({ label: f.name, value: f.id }))];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <Header title={isEditing ? 'Edit Crop' : 'Add Crop'} leftAction={{ icon: 'close', onPress: () => router.back() }} />
@@ -179,6 +193,12 @@ export default function CropFormScreen() {
             placeholder="e.g. North field"
             error={errors.fieldLocation?.message}
             {...register('fieldLocation')}
+          />
+          <ChipSelect
+            label="Assigned field (optional)"
+            options={fieldOptions}
+            value={watch('fieldId')}
+            onChange={(value) => setValue('fieldId', value, { shouldValidate: true })}
           />
           <Input
             label="Planting date (YYYY-MM-DD) *"

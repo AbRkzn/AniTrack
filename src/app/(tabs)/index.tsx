@@ -117,6 +117,8 @@ export default function DashboardScreen() {
             <QuickAction icon="basket" label="Add Harvest" color={colors.warning} onPress={() => router.push('/harvest-form')} />
             <QuickAction icon="wallet" label="Add Expense" color={colors.error} onPress={() => router.push('/expense-form')} />
             <QuickAction icon="flask" label="Fertilizer" color={colors.chartPurple} onPress={() => router.push('/fertilizers')} />
+            <QuickAction icon="checkmark-done" label="Tasks" color={colors.chartTeal} onPress={() => router.push('/tasks')} />
+            <QuickAction icon="map" label="Fields" color={colors.chartBlue} onPress={() => router.push('/fields')} />
           </View>
         </View>
 
