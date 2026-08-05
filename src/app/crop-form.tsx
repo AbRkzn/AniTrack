@@ -19,6 +19,8 @@ import { useFieldsStore } from '../store/fieldsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
 import { ChipSelect } from '../components/ui/ChipSelect';
+import { Select } from '../components/ui/Select';
+import { DateField } from '../components/ui/DateField';
 import { Button } from '../components/ui/Button';
 import { PhotoPicker } from '../components/ui/PhotoPicker';
 import { typography, spacing, ColorScheme } from '../constants/theme';
@@ -33,6 +35,46 @@ const STATUS_OPTIONS: { label: string; value: CropStatus }[] = [
   { label: 'Harvested', value: 'harvested' },
   { label: 'Failed', value: 'failed' },
 ];
+
+const CROP_NAMES = [
+  'Maize',
+  'Rice',
+  'Mango',
+  'Banana',
+  'Coconut',
+  'Sugarcane',
+  'Tomatoes',
+  'Cabbage',
+  'Eggplant',
+  'Onion',
+  'Garlic',
+  'Sweet Potato',
+  'Soybeans',
+  'Chili',
+  'Watermelon',
+];
+
+const CROP_VARIETIES: Record<string, string[]> = {
+  Maize: ['SC 403', 'IPB Var 6', 'USM Var 10', 'Lagkitan 320', 'Green Super', 'Maya', 'Kabayan'],
+  Rice: ['NSIC Rc 222', 'NSIC Rc 82', 'NSIC Rc 160', 'Dinorado', 'Japonica'],
+  Mango: ['Carabao', 'Pico', 'Manila Super', 'Sweet Elena'],
+  Banana: ['Lakatan', 'Latundan', 'Saba', 'Cavendish'],
+  Coconut: ['Tall', 'Dwarf', 'Macauno'],
+  Sugarcane: ['Phil 99-2022', 'VMC 86-550', 'VV 87-3'],
+  Cabbage: ['Gloria F1', 'Scorpio', 'K-K Cross'],
+  Tomatoes: ['Roma', 'Diamante Max F1', 'Marvel'],
+  Eggplant: ['Dumaguete Long Purple', 'Morena', 'Pinoy F1'],
+  Onion: ['Red Creole', 'Yellow Granex', 'Batanes'],
+  Garlic: ['Ilocos White', 'Batangas'],
+  'Sweet Potato': ['NSIC Sp-22', 'VSP-6'],
+  Soybeans: ['TGx 1448-2E'],
+  Chili: ['Siling Labuyo', 'Siling Haba', 'Hot Chili'],
+  Watermelon: ['Sugar Baby', 'Charleston Gray'],
+};
+
+const DEFAULT_VARIETIES = ['Local', 'Improved', 'Hybrid', 'Organic'];
+
+const YIELD_UNITS = ['kg', 'tons', 'sacks', 'pieces', 'liters', 'boxes', 'bunches'];
 
 const cropSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -176,6 +218,12 @@ export default function CropFormScreen() {
   }
 
   const fieldOptions = [{ label: 'None', value: NONE }, ...fields.map((f) => ({ label: f.name, value: f.id }))];
+  const cropNameOptions = useMemo(() => CROP_NAMES.map((c) => ({ label: c, value: c })), []);
+  const varietyOptions = useMemo(() => {
+    const list = CROP_VARIETIES[watch('name').trim()] ?? DEFAULT_VARIETIES;
+    return list.map((v) => ({ label: v, value: v }));
+  }, [watch('name')]);
+  const locationOptions = useMemo(() => fields.map((f) => ({ label: f.name, value: f.name })), [fields]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -186,13 +234,32 @@ export default function CropFormScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Input label="Crop name *" placeholder="e.g. Maize" error={errors.name?.message} {...register('name')} />
-          <Input label="Variety" placeholder="e.g. SC 403" error={errors.variety?.message} {...register('variety')} />
-          <Input
+          <Select
+            label="Crop name *"
+            placeholder="Choose a crop"
+            options={cropNameOptions}
+            value={watch('name')}
+            onChange={(v) => setValue('name', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.name?.message}
+          />
+          <Select
+            label="Variety"
+            placeholder="Choose a variety"
+            options={varietyOptions}
+            value={watch('variety')}
+            onChange={(v) => setValue('variety', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.variety?.message}
+          />
+          <Select
             label="Field location"
-            placeholder="e.g. North field"
+            placeholder="Choose a location"
+            options={locationOptions}
+            value={watch('fieldLocation')}
+            onChange={(v) => setValue('fieldLocation', v, { shouldValidate: true })}
+            allowCustom
             error={errors.fieldLocation?.message}
-            {...register('fieldLocation')}
           />
           <ChipSelect
             label="Assigned field (optional)"
@@ -200,17 +267,19 @@ export default function CropFormScreen() {
             value={watch('fieldId')}
             onChange={(value) => setValue('fieldId', value, { shouldValidate: true })}
           />
-          <Input
-            label="Planting date (YYYY-MM-DD) *"
-            placeholder="2026-08-02"
+          <DateField
+            label="Planting date *"
+            value={watch('plantingDate')}
+            onChange={(v) => setValue('plantingDate', v, { shouldValidate: true })}
             error={errors.plantingDate?.message}
-            {...register('plantingDate')}
+            maximumDate={watch('expectedHarvestDate') || undefined}
           />
-          <Input
-            label="Expected harvest date (YYYY-MM-DD) *"
-            placeholder="2026-11-02"
+          <DateField
+            label="Expected harvest date *"
+            value={watch('expectedHarvestDate')}
+            onChange={(v) => setValue('expectedHarvestDate', v, { shouldValidate: true })}
             error={errors.expectedHarvestDate?.message}
-            {...register('expectedHarvestDate')}
+            minimumDate={watch('plantingDate') || undefined}
           />
           <ChipSelect
             label="Status"
@@ -226,7 +295,15 @@ export default function CropFormScreen() {
             error={errors.yieldEstimate?.message}
             {...register('yieldEstimate')}
           />
-          <Input label="Yield unit" placeholder="kg" error={errors.yieldUnit?.message} {...register('yieldUnit')} />
+          <Select
+            label="Yield unit"
+            placeholder="Choose a unit"
+            options={YIELD_UNITS.map((u) => ({ label: u, value: u }))}
+            value={watch('yieldUnit')}
+            onChange={(v) => setValue('yieldUnit', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.yieldUnit?.message}
+          />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
           <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button

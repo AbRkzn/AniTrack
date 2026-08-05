@@ -4,6 +4,8 @@ export { Badge } from './Badge';
 export { EmptyState } from './EmptyState';
 export { LoadingOverlay, Skeleton } from './Loading';
 export { Input, TextArea } from './Input';
+export { Select } from './Select';
+export { DateField } from './DateField';
 export { FAB } from './FAB';
 export { Header } from './Header';
 export { OfflineBadge, StatusBadge } from './StatusBadge';

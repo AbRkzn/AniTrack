@@ -20,6 +20,7 @@ import { useCropsStore } from '../store/cropsStore';
 import { useFieldsStore } from '../store/fieldsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme } from '../constants/theme';
@@ -238,11 +239,11 @@ export default function TaskFormScreen() {
             onChange={(value) => setValue('status', value as TaskStatus, { shouldValidate: true })}
             error={errors.status?.message}
           />
-          <Input
-            label="Due date (YYYY-MM-DD) *"
-            placeholder="2026-08-02"
+          <DateField
+            label="Due date *"
+            value={watch('dueDate')}
+            onChange={(v) => setValue('dueDate', v, { shouldValidate: true })}
             error={errors.dueDate?.message}
-            {...register('dueDate')}
           />
           <ChipSelect
             label="Linked crop (optional)"
@@ -277,11 +278,11 @@ export default function TaskFormScreen() {
             />
           </View>
           {reminderEnabled && (
-            <Input
-              label="Reminder date (YYYY-MM-DD)"
-              placeholder="2026-08-01"
+            <DateField
+              label="Reminder date"
+              value={watch('reminderDate')}
+              onChange={(v) => setValue('reminderDate', v, { shouldValidate: true })}
               error={errors.reminderDate?.message}
-              {...register('reminderDate')}
             />
           )}
           <Button

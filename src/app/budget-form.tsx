@@ -4,12 +4,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
+import { format, addMonths } from 'date-fns';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBudgetStore } from '../store/budgetStore';
 import { useAppStore } from '../store/appStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme } from '../constants/theme';
@@ -60,6 +61,16 @@ export default function BudgetFormScreen() {
 
   const { addBudget, updateBudget, deleteBudget, getBudgetById } = useBudgetStore();
   const currency = useAppStore((s) => s.settings.currency);
+
+  const monthOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [];
+    const start = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = addMonths(start, i);
+      options.push({ label: format(d, 'MMMM yyyy'), value: format(d, 'yyyy-MM') });
+    }
+    return options;
+  }, []);
 
   const {
     register,
@@ -172,11 +183,13 @@ export default function BudgetFormScreen() {
             error={errors.amount?.message}
             {...register('amount')}
           />
-          <Input
-            label="Month (YYYY-MM) *"
-            placeholder="2026-08"
+          <Select
+            label="Month *"
+            placeholder="Choose a month"
+            options={monthOptions}
+            value={watch('month')}
+            onChange={(v) => setValue('month', v, { shouldValidate: true })}
             error={errors.month?.message}
-            {...register('month')}
           />
           <Text style={styles.hint}>
             Saving a budget for a category and month that already exists will update it.

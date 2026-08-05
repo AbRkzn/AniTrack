@@ -19,6 +19,8 @@ import { useFertilizerStore } from '../store/fertilizerStore';
 import { useCropsStore } from '../store/cropsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme } from '../constants/theme';
@@ -26,6 +28,8 @@ import { useTheme } from '../constants/themeContext';
 import { FertilizerApplication, FertilizerType, ApplicationMethod } from '../types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const MEASURE_UNITS = ['kg', 'tons', 'sacks', 'pieces', 'liters', 'boxes', 'bunches', 'pcs', 'pails'];
 
 const TYPE_OPTIONS: { label: string; value: FertilizerType }[] = [
   { label: 'Nitrogen', value: 'nitrogen' },
@@ -269,12 +273,20 @@ export default function FertilizerFormScreen() {
             error={errors.totalAmount?.message}
             {...register('totalAmount')}
           />
-          <Input label="Unit" placeholder="kg" error={errors.unit?.message} {...register('unit')} />
-          <Input
-            label="Scheduled date (YYYY-MM-DD) *"
-            placeholder="2026-08-02"
+          <Select
+            label="Unit *"
+            placeholder="Choose a unit"
+            options={MEASURE_UNITS.map((u) => ({ label: u, value: u }))}
+            value={watch('unit')}
+            onChange={(v) => setValue('unit', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.unit?.message}
+          />
+          <DateField
+            label="Scheduled date *"
+            value={watch('scheduledDate')}
+            onChange={(v) => setValue('scheduledDate', v, { shouldValidate: true })}
             error={errors.scheduledDate?.message}
-            {...register('scheduledDate')}
           />
           <ChipSelect
             label="Status"

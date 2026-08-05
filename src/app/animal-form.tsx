@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAnimalsStore } from '../store/animalsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { PhotoPicker } from '../components/ui/PhotoPicker';
@@ -199,11 +200,12 @@ export default function AnimalFormScreen() {
             {...register('species')}
           />
           <Input label="Breed" placeholder="e.g. Brahman" error={errors.breed?.message} {...register('breed')} />
-          <Input
+          <DateField
             label="Birth date (YYYY-MM-DD)"
-            placeholder="2024-03-15"
+            value={watch('birthDate')}
+            onChange={(v) => setValue('birthDate', v, { shouldValidate: true })}
             error={errors.birthDate?.message}
-            {...register('birthDate')}
+            maximumDate={today()}
           />
           <ChipSelect
             label="Sex"

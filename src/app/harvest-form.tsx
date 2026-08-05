@@ -19,6 +19,8 @@ import { useHarvestsStore } from '../store/harvestsStore';
 import { useCropsStore } from '../store/cropsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { PhotoPicker } from '../components/ui/PhotoPicker';
@@ -27,6 +29,8 @@ import { useTheme } from '../constants/themeContext';
 import { Harvest } from '../types';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const MEASURE_UNITS = ['kg', 'tons', 'sacks', 'pieces', 'liters', 'boxes', 'bunches', 'pcs', 'pails'];
 
 const harvestSchema = z.object({
   cropId: z.string().min(1, 'Select a crop'),
@@ -195,11 +199,12 @@ export default function HarvestFormScreen() {
               </TouchableOpacity>
             </View>
           )}
-          <Input
-            label="Harvest date (YYYY-MM-DD) *"
-            placeholder="2026-08-02"
+          <DateField
+            label="Harvest date *"
+            value={watch('harvestDate')}
+            onChange={(v) => setValue('harvestDate', v, { shouldValidate: true })}
             error={errors.harvestDate?.message}
-            {...register('harvestDate')}
+            maximumDate={today()}
           />
           <Input
             label="Quantity *"
@@ -208,7 +213,15 @@ export default function HarvestFormScreen() {
             error={errors.quantity?.message}
             {...register('quantity')}
           />
-          <Input label="Unit" placeholder="kg" error={errors.unit?.message} {...register('unit')} />
+          <Select
+            label="Unit *"
+            placeholder="Choose a unit"
+            options={MEASURE_UNITS.map((u) => ({ label: u, value: u }))}
+            value={watch('unit')}
+            onChange={(v) => setValue('unit', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.unit?.message}
+          />
           <Input label="Quality" placeholder="e.g. Grade A" error={errors.quality?.message} {...register('quality')} />
           <Input label="Buyer" placeholder="e.g. Farmer Co-op" error={errors.buyer?.message} {...register('buyer')} />
           <Input

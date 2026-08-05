@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAnimalHealthStore } from '../store/animalHealthStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme } from '../constants/theme';
@@ -173,11 +174,12 @@ export default function HealthRecordFormScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Input
-            label="Date (YYYY-MM-DD) *"
-            placeholder="2026-08-03"
+          <DateField
+            label="Date *"
+            value={watch('date')}
+            onChange={(v) => setValue('date', v, { shouldValidate: true })}
             error={errors.date?.message}
-            {...register('date')}
+            maximumDate={today()}
           />
           <ChipSelect
             label="Record type"

@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFieldsStore } from '../store/fieldsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
@@ -22,6 +23,17 @@ const fieldSchema = z.object({
 
 type FieldFormValues = z.infer<typeof fieldSchema>;
 
+const SOIL_TYPES = [
+  'Clay',
+  'Clay loam',
+  'Loam',
+  'Sandy loam',
+  'Silt loam',
+  'Sand',
+  'Peat',
+  'Potting mix',
+];
+
 export default function FieldFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const fieldId = typeof id === 'string' && id ? id : undefined;
@@ -35,6 +47,8 @@ export default function FieldFormScreen() {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FieldFormValues>({
@@ -131,7 +145,15 @@ export default function FieldFormScreen() {
             error={errors.acreage?.message}
             {...register('acreage')}
           />
-          <Input label="Soil type" placeholder="e.g. Clay loam" error={errors.soilType?.message} {...register('soilType')} />
+          <Select
+            label="Soil type"
+            placeholder="Choose a soil type"
+            options={SOIL_TYPES.map((t) => ({ label: t, value: t }))}
+            value={watch('soilType')}
+            onChange={(v) => setValue('soilType', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.soilType?.message}
+          />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
           <Button
             title={isEditing ? 'Save Changes' : 'Add Field'}
