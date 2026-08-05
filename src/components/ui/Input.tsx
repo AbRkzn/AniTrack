@@ -33,6 +33,14 @@ export function Input({
           style={[styles.input, leftIcon ? { paddingLeft: 0 } : null, style]}
           placeholderTextColor={colors.textTertiary}
           {...props}
+          onChange={(event: any) => {
+            const text = event?.nativeEvent?.text;
+            if (typeof text === 'string') {
+              props.onChange?.({ target: { value: text, name: (props as any).name } } as any);
+            } else {
+              props.onChange?.(event);
+            }
+          }}
         />
         {rightIcon && <Icon name={rightIcon} size={18} color={colors.textSecondary} style={styles.icon} />}
       </View>

@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -89,6 +90,16 @@ export default function AnimalProductFormScreen() {
   });
 
   const [loading, setLoading] = useState(isEditing);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -178,7 +189,7 @@ export default function AnimalProductFormScreen() {
       />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, Platform.OS === 'android' && { paddingBottom: spacing.xxxl * 2 + keyboardHeight }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -262,7 +273,7 @@ const createStyles = (colors: ColorScheme) =>
     safe: { flex: 1, backgroundColor: colors.surface },
     flex: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface },
-    content: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+    content: { padding: spacing.lg, paddingBottom: spacing.xxxl * 2 },
     row: { flexDirection: 'row', gap: spacing.md },
     rowItem: { flex: 1 },
     submit: { marginTop: spacing.sm },
