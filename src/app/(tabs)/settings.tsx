@@ -3,6 +3,9 @@ import { View, Text, ScrollView, Switch, StyleSheet, TouchableOpacity, Alert } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAppStore } from '../../store/appStore';
+import { useAuthStore } from '../../store/authStore';
+import { syncNow } from '../../services/sync';
+import { isSupabaseConfigured } from '../../config/supabase';
 import { Header } from '../../components/ui/Header';
 import { Card } from '../../components/ui/Card';
 import { ChipSelect } from '../../components/ui/ChipSelect';
@@ -105,6 +108,11 @@ export default function SettingsScreen() {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const isOnline = useAppStore((s) => s.isOnline);
+  const sync = useAppStore((s) => s.sync);
+  const authStatus = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+  const guestMode = useAuthStore((s) => s.guestMode);
+  const signOut = useAuthStore((s) => s.signOut);
   const reminderText = `${settings.reminderDaysBeforeHarvest} days before`;
   const backupText = `Every ${settings.backupIntervalDays} days`;
   const [latText, setLatText] = useState(String(settings.farmLatitude));
@@ -166,6 +174,37 @@ export default function SettingsScreen() {
       },
     ]);
   }, []);
+
+  const onSyncNow = useCallback(async () => {
+    const result = await syncNow();
+    if (result.status === 'offline') {
+      Alert.alert('Offline', 'You need an internet connection to sync.');
+    } else if (result.status === 'not_signed_in') {
+      Alert.alert('Not Signed In', 'Sign in to sync your data to the cloud.');
+    } else if (result.status === 'not_configured') {
+      Alert.alert('Not Configured', 'Cloud sync is not configured in .env.');
+    } else if (result.status === 'busy') {
+      Alert.alert('Syncing', 'A sync is already in progress.');
+    } else {
+      Alert.alert(
+        'Sync Complete',
+        `Pushed ${result.pushed} change(s), pulled ${result.pulled} record(s)${result.failed > 0 ? `, ${result.failed} failed` : ''}.`
+      );
+    }
+  }, []);
+
+  const onSignOut = useCallback(() => {
+    Alert.alert('Sign Out', 'Your local data stays on this device. Sync will stop until you sign in again.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: () => {
+          signOut().catch(() => {});
+        },
+      },
+    ]);
+  }, [signOut]);
 
   const onImportBackup = useCallback(() => {
     Alert.alert(
@@ -247,6 +286,43 @@ export default function SettingsScreen() {
             }
           />
         </Card>
+
+        <Text style={styles.sectionTitle}>Account</Text>
+        <Card style={styles.sectionCard} padding={spacing.xs}>
+          {authStatus === 'signedIn' && user ? (
+            <SettingRow label="Signed In As" value={user.email ?? 'Account'} icon="person-circle-outline" />
+          ) : guestMode ? (
+            <SettingRow label="Guest Mode" value="Using the app without an account" icon="person-outline" />
+          ) : (
+            <SettingRow label="Not Signed In" value="Cloud sync is off" icon="person-outline" />
+          )}
+          <SettingRow
+            label="Sync Status"
+            value={sync.isSyncing ? 'Syncing...' : sync.lastSyncAt ? `Last synced ${new Date(sync.lastSyncAt).toLocaleTimeString()}` : 'Never synced'}
+            icon="cloud-done-outline"
+          />
+          {sync.pendingCount > 0 && (
+            <SettingRow label="Pending Changes" value={`${sync.pendingCount} queued`} icon="hourglass-outline" />
+          )}
+          {sync.failedCount > 0 && (
+            <SettingRow label="Failed Changes" value={`${sync.failedCount} need attention`} icon="alert-circle-outline" />
+          )}
+        </Card>
+        {authStatus === 'signedIn' && user ? (
+          <Button title="Sign Out" variant="outline" fullWidth onPress={onSignOut} style={styles.dataButton} />
+        ) : (
+          isSupabaseConfigured && (
+            <Button title="Sign In / Create Account" variant="primary" fullWidth onPress={() => router.push('/auth')} style={styles.dataButton} />
+          )
+        )}
+        <Button
+          title={sync.isSyncing ? 'Syncing...' : 'Sync Now'}
+          variant="outline"
+          fullWidth
+          onPress={onSyncNow}
+          style={styles.dataButton}
+          disabled={sync.isSyncing || !isOnline}
+        />
 
         <Text style={styles.sectionTitle}>Data</Text>
         <Card style={styles.sectionCard} padding={spacing.xs}>

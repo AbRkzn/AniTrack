@@ -1,5 +1,6 @@
 import { Budget, BudgetQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class BudgetRepository {
   async getAll(query?: BudgetQuery): Promise<Budget[]> {
@@ -46,6 +47,7 @@ export class BudgetRepository {
 
     const budget = await this.getByCategoryAndMonth(data.category, data.month);
     if (!budget) throw new Error('Failed to create budget');
+    await recordSyncChange('budgets', 'create', budget.id);
     return budget;
   }
 
@@ -76,11 +78,13 @@ export class BudgetRepository {
 
     const budget = await this.getById(id);
     if (!budget) throw new Error('Failed to update budget');
+    await recordSyncChange('budgets', 'update', id);
     return budget;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM budgets WHERE id = ?', [id]);
+    await recordSyncChange('budgets', 'delete', id);
   }
 
   private mapRowToBudget(row: any): Budget {

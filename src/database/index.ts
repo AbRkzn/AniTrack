@@ -170,6 +170,7 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       cost REAL,
       notes TEXT NOT NULL DEFAULT '',
       createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL DEFAULT '',
       FOREIGN KEY (animalId) REFERENCES animals(id) ON DELETE CASCADE
     );
     CREATE TABLE IF NOT EXISTS fields (
@@ -226,6 +227,12 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
   const cropColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(crops)');
   if (!cropColumns.some((column) => column.name === 'fieldId')) {
     await database.execAsync('ALTER TABLE crops ADD COLUMN fieldId TEXT');
+  }
+
+  const healthColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(animal_health_records)');
+  if (!healthColumns.some((column) => column.name === 'updatedAt')) {
+    await database.execAsync('ALTER TABLE animal_health_records ADD COLUMN updatedAt TEXT NOT NULL DEFAULT ""');
+    await database.execAsync('UPDATE animal_health_records SET updatedAt = createdAt WHERE updatedAt = ""');
   }
 }
 

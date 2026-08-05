@@ -1,5 +1,6 @@
 import { Animal, AnimalQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class AnimalRepository {
   async getAll(query?: AnimalQuery): Promise<Animal[]> {
@@ -63,6 +64,7 @@ export class AnimalRepository {
 
     const animal = await this.getById(id);
     if (!animal) throw new Error('Failed to create animal');
+    await recordSyncChange('animals', 'create', id);
     return animal;
   }
 
@@ -102,11 +104,13 @@ export class AnimalRepository {
 
     const animal = await this.getById(id);
     if (!animal) throw new Error('Failed to update animal');
+    await recordSyncChange('animals', 'update', id);
     return animal;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM animals WHERE id = ?', [id]);
+    await recordSyncChange('animals', 'delete', id);
   }
 
   private mapRowToAnimal(row: any): Animal {

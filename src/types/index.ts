@@ -189,6 +189,7 @@ export interface AnimalHealthRecord {
   cost?: number;
   notes: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -328,7 +329,7 @@ export type ExpenseFormData = Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>;
 export type FertilizerFormData = Omit<FertilizerApplication, 'id' | 'createdAt' | 'updatedAt'>;
 export type HarvestFormData = Omit<Harvest, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalFormData = Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>;
-export type AnimalHealthFormData = Omit<AnimalHealthRecord, 'id' | 'createdAt'>;
+export type AnimalHealthFormData = Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>;
 export type FieldFormData = Omit<Field, 'id' | 'createdAt' | 'updatedAt'>;
 export type TaskFormData = Omit<FarmTask, 'id' | 'createdAt' | 'updatedAt'>;
 export type BudgetFormData = Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>;

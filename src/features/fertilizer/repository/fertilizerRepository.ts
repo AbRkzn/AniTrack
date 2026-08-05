@@ -1,5 +1,6 @@
 import { FertilizerApplication, FertilizerQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class FertilizerRepository {
   async getAll(query?: FertilizerQuery): Promise<FertilizerApplication[]> {
@@ -53,6 +54,7 @@ export class FertilizerRepository {
 
     const app = await this.getById(id);
     if (!app) throw new Error('Failed to create fertilizer schedule');
+    await recordSyncChange('fertilizer_schedules', 'create', id);
     return app;
   }
 
@@ -88,11 +90,13 @@ export class FertilizerRepository {
 
     const app = await this.getById(id);
     if (!app) throw new Error('Failed to update fertilizer schedule');
+    await recordSyncChange('fertilizer_schedules', 'update', id);
     return app;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM fertilizer_schedules WHERE id = ?', [id]);
+    await recordSyncChange('fertilizer_schedules', 'delete', id);
   }
 
   private mapRowToApplication(row: any): FertilizerApplication {

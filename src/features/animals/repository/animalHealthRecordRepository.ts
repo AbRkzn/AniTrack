@@ -1,5 +1,6 @@
 import { AnimalHealthRecord, AnimalHealthQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class AnimalHealthRecordRepository {
   async getByAnimalId(animalId: string, query?: AnimalHealthQuery): Promise<AnimalHealthRecord[]> {
@@ -37,25 +38,27 @@ export class AnimalHealthRecordRepository {
     return row ? this.mapRowToRecord(row) : null;
   }
 
-  async create(data: Omit<AnimalHealthRecord, 'id' | 'createdAt'>): Promise<AnimalHealthRecord> {
+  async create(data: Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<AnimalHealthRecord> {
     const now = new Date().toISOString();
     const id = `health_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     await executeSql(
-      'INSERT INTO animal_health_records (id, animalId, date, type, diagnosis, medication, dosage, veterinarian, cost, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO animal_health_records (id, animalId, date, type, diagnosis, medication, dosage, veterinarian, cost, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id, data.animalId, data.date, data.type, data.diagnosis || null,
         data.medication || null, data.dosage || null, data.veterinarian || null,
-        data.cost ?? null, data.notes, now
+        data.cost ?? null, data.notes, now, now
       ]
     );
 
     const record = await this.getById(id);
     if (!record) throw new Error('Failed to create health record');
+    await recordSyncChange('animal_health_records', 'create', id);
     return record;
   }
 
-  async update(id: string, data: Partial<Omit<AnimalHealthRecord, 'id' | 'createdAt'>>): Promise<AnimalHealthRecord> {
+  async update(id: string, data: Partial<Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>>): Promise<AnimalHealthRecord> {
+    const now = new Date().toISOString();
     const updates: string[] = [];
     const params: any[] = [];
 
@@ -79,16 +82,19 @@ export class AnimalHealthRecordRepository {
       return record;
     }
 
-    params.push(id);
+    updates.push('updatedAt = ?');
+    params.push(now, id);
     await executeSql(`UPDATE animal_health_records SET ${updates.join(', ')} WHERE id = ?`, params);
 
     const record = await this.getById(id);
     if (!record) throw new Error('Failed to update health record');
+    await recordSyncChange('animal_health_records', 'update', id);
     return record;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM animal_health_records WHERE id = ?', [id]);
+    await recordSyncChange('animal_health_records', 'delete', id);
   }
 
   private mapRowToRecord(row: any): AnimalHealthRecord {
@@ -104,6 +110,7 @@ export class AnimalHealthRecordRepository {
       cost: row.cost ?? undefined,
       notes: row.notes,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt || row.createdAt,
     };
   }
 }

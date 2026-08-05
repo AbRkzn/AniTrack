@@ -1,5 +1,6 @@
 import { Crop, CropQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class CropRepository {
   async getAll(query?: CropQuery): Promise<Crop[]> {
@@ -63,6 +64,7 @@ export class CropRepository {
 
     const crop = await this.getById(id);
     if (!crop) throw new Error('Failed to create crop');
+    await recordSyncChange('crops', 'create', id);
     return crop;
   }
 
@@ -99,11 +101,13 @@ export class CropRepository {
 
     const crop = await this.getById(id);
     if (!crop) throw new Error('Failed to update crop');
+    await recordSyncChange('crops', 'update', id);
     return crop;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM crops WHERE id = ?', [id]);
+    await recordSyncChange('crops', 'delete', id);
   }
 
   private mapRowToCrop(row: any): Crop {

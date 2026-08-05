@@ -1,6 +1,7 @@
 import { Expense, ExpenseQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
 import { addDays, addMonths, addYears, format } from 'date-fns';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class ExpenseRepository {
   async getAll(query?: ExpenseQuery): Promise<Expense[]> {
@@ -59,6 +60,7 @@ export class ExpenseRepository {
 
     const expense = await this.getById(id);
     if (!expense) throw new Error('Failed to create expense');
+    await recordSyncChange('expenses', 'create', id);
     return expense;
   }
 
@@ -94,11 +96,13 @@ export class ExpenseRepository {
 
     const expense = await this.getById(id);
     if (!expense) throw new Error('Failed to update expense');
+    await recordSyncChange('expenses', 'update', id);
     return expense;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM expenses WHERE id = ?', [id]);
+    await recordSyncChange('expenses', 'delete', id);
   }
 
   private mapRowToExpense(row: any): Expense {

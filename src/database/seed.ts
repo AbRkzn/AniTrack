@@ -549,7 +549,7 @@ const SAMPLE_ANIMALS: Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>[] = [
   },
 ];
 
-const SAMPLE_HEALTH_RECORDS: Omit<AnimalHealthRecord, 'id' | 'createdAt'>[] = [
+const SAMPLE_HEALTH_RECORDS: Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
     animalId: 'C-101',
     date: '2026-05-12',

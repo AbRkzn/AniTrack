@@ -1,5 +1,6 @@
 import { Harvest, HarvestQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class HarvestRepository {
   async getAll(query?: HarvestQuery): Promise<Harvest[]> {
@@ -50,6 +51,7 @@ export class HarvestRepository {
 
     const harvest = await this.getById(id);
     if (!harvest) throw new Error('Failed to create harvest');
+    await recordSyncChange('harvests', 'create', id);
     return harvest;
   }
 
@@ -85,11 +87,13 @@ export class HarvestRepository {
 
     const harvest = await this.getById(id);
     if (!harvest) throw new Error('Failed to update harvest');
+    await recordSyncChange('harvests', 'update', id);
     return harvest;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM harvests WHERE id = ?', [id]);
+    await recordSyncChange('harvests', 'delete', id);
   }
 
   private mapRowToHarvest(row: any): Harvest {

@@ -1,5 +1,6 @@
 import { Field, FieldQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class FieldRepository {
   async getAll(query?: FieldQuery): Promise<Field[]> {
@@ -34,6 +35,7 @@ export class FieldRepository {
 
     const field = await this.getById(id);
     if (!field) throw new Error('Failed to create field');
+    await recordSyncChange('fields', 'create', id);
     return field;
   }
 
@@ -64,11 +66,13 @@ export class FieldRepository {
 
     const field = await this.getById(id);
     if (!field) throw new Error('Failed to update field');
+    await recordSyncChange('fields', 'update', id);
     return field;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM fields WHERE id = ?', [id]);
+    await recordSyncChange('fields', 'delete', id);
   }
 
   private mapRowToField(row: any): Field {

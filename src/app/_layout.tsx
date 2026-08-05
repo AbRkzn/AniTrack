@@ -4,9 +4,11 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { seedIfEmpty } from '../database/seed';
 import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
 import { ThemeProvider, useTheme } from '../constants/themeContext';
 import { configureNotifications, setupNotificationTapHandling } from '../services/notifications';
 import { useWeatherSync } from '../hooks/useWeatherSync';
+import { useSyncEngine } from '../hooks/useSyncEngine';
 
 function RootNavigator({ ready }: { ready: boolean }) {
   const { colors, isDark } = useTheme();
@@ -46,6 +48,7 @@ function RootNavigator({ ready }: { ready: boolean }) {
         <Stack.Screen name="task-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="budget-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="field-form" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
         <Stack.Screen name="calendar" />
       </Stack>
     </>
@@ -56,6 +59,7 @@ export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const loadSettings = useAppStore((s) => s.loadSettings);
   useWeatherSync(ready);
+  useSyncEngine(ready);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -72,7 +76,11 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    Promise.all([seedIfEmpty(), loadSettings()]).finally(() => setReady(true));
+    Promise.all([
+      seedIfEmpty(),
+      loadSettings(),
+      useAuthStore.getState().initialize(),
+    ]).finally(() => setReady(true));
   }, [loadSettings]);
 
   return (

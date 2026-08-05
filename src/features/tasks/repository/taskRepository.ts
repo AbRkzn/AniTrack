@@ -1,5 +1,6 @@
 import { FarmTask, TaskQuery } from '../../../types';
 import { queryAll, queryFirst, executeSql } from '../../../database';
+import { recordSyncChange } from '../../../services/syncQueue';
 
 export class TaskRepository {
   async getAll(query?: TaskQuery): Promise<FarmTask[]> {
@@ -66,6 +67,7 @@ export class TaskRepository {
 
     const task = await this.getById(id);
     if (!task) throw new Error('Failed to create task');
+    await recordSyncChange('farm_tasks', 'create', id);
     return task;
   }
 
@@ -104,11 +106,13 @@ export class TaskRepository {
 
     const task = await this.getById(id);
     if (!task) throw new Error('Failed to update task');
+    await recordSyncChange('farm_tasks', 'update', id);
     return task;
   }
 
   async delete(id: string): Promise<void> {
     await executeSql('DELETE FROM farm_tasks WHERE id = ?', [id]);
+    await recordSyncChange('farm_tasks', 'delete', id);
   }
 
   private mapRowToTask(row: any): FarmTask {

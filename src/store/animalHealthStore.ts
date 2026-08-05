@@ -10,8 +10,8 @@ interface AnimalHealthState {
   selectedRecord: AnimalHealthRecord | null;
   fetchRecords: (animalId: string) => Promise<void>;
   getRecordById: (id: string) => Promise<AnimalHealthRecord | null>;
-  addRecord: (data: Omit<AnimalHealthRecord, 'id' | 'createdAt'>) => Promise<AnimalHealthRecord>;
-  updateRecord: (id: string, data: Partial<Omit<AnimalHealthRecord, 'id' | 'createdAt'>>) => Promise<AnimalHealthRecord>;
+  addRecord: (data: Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>) => Promise<AnimalHealthRecord>;
+  updateRecord: (id: string, data: Partial<Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<AnimalHealthRecord>;
   deleteRecord: (id: string) => Promise<void>;
   setSelectedRecord: (record: AnimalHealthRecord | null) => void;
   clearRecords: () => void;
