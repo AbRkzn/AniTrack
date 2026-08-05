@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import {
   SYNC_TABLES,
   SyncTable,
+  ensureInitialUpload,
   getPendingSyncItems,
   markSyncItemDone,
   markSyncItemFailed,
@@ -133,6 +134,9 @@ export async function syncNow(): Promise<SyncResult> {
   let pulled = 0;
 
   try {
+    // 0) First sync for this user: upload any pre-existing local rows
+    await ensureInitialUpload(user.id);
+
     // 1) Push pending local changes first
     const pending = await getPendingSyncItems();
     for (const item of pending) {

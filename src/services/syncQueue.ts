@@ -61,6 +61,34 @@ export function recordSyncChange(table: SyncTable, operation: SyncOperation, rec
   });
 }
 
+/**
+ * Uploads every existing local row on the first sync for a given user.
+ * Without this, data created before signing in (guest mode / offline)
+ * would never leave the device because the queue only records changes
+ * made after it is populated. Upserts are idempotent, so re-pushing an
+ * already-synced row is harmless. Runs once per user via a settings flag.
+ */
+export async function ensureInitialUpload(userId: string): Promise<number> {
+  const flagKey = `initial_upload_${userId}`;
+  const existing = await queryFirst<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ?',
+    [flagKey]
+  );
+  if (existing?.value === '1') return 0;
+  await executeSql('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [flagKey, '1']);
+
+  let count = 0;
+  for (const table of SYNC_TABLES) {
+    const rows = await queryAll<{ id: string }>(`SELECT id FROM ${table}`);
+    for (const row of rows) {
+      await recordSyncChange(table, 'create', row.id)
+        .catch(() => {})
+      count += 1
+    }
+  }
+  return count
+}
+
 export async function getPendingSyncItems(): Promise<SyncQueueRow[]> {
   const items = await queryAll<SyncQueueRow>(
     `SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY createdAt ASC LIMIT 500`
