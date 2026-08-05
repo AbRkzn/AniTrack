@@ -382,46 +382,6 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <Text style={styles.sectionTitle}>Weather</Text>
-        <Card style={styles.locationCard} padding={spacing.md}>
-          <Input
-            label="Farm Location Name"
-            leftIcon="map-outline"
-            placeholder="e.g. Nueva Ecija, Philippines"
-            value={settings.farmLocationName}
-            onChangeText={(text) => updateSettings({ farmLocationName: text })}
-          />
-          <Input
-            label="Farm Latitude"
-            leftIcon="location-outline"
-            keyboardType="decimal-pad"
-            placeholder="-90 to 90"
-            value={latText}
-            onChangeText={(text) => {
-              setLatText(text);
-              const n = parseFloat(text);
-              if (!Number.isNaN(n) && n >= -90 && n <= 90) {
-                updateSettings({ farmLatitude: n });
-              }
-            }}
-          />
-          <Input
-            label="Farm Longitude"
-            leftIcon="compass-outline"
-            keyboardType="decimal-pad"
-            placeholder="-180 to 180"
-            value={lonText}
-            onChangeText={(text) => {
-              setLonText(text);
-              const n = parseFloat(text);
-              if (!Number.isNaN(n) && n >= -180 && n <= 180) {
-                updateSettings({ farmLongitude: n });
-              }
-            }}
-          />
-        </Card>
-        <Text style={styles.sectionNote}>Weather syncs automatically whenever the app comes online.</Text>
-
         <Button title="Load Sample Data" variant="outline" fullWidth onPress={onLoadSampleData} style={styles.dataButton} />
         <Button title="Clear All Data" variant="danger" fullWidth onPress={onClearAllData} style={styles.dataButton} />
 
