@@ -145,17 +145,3 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
 }
-
-export function formatPhilippinePhone(input: string): string {
-  const digits = input.replace(/\D/g, '');
-  if (digits.length === 10 && digits.startsWith('9')) return `+63${digits}`;
-  if (digits.length === 11 && digits.startsWith('0')) return `+63${digits.slice(1)}`;
-  if (digits.length === 12 && digits.startsWith('63')) return `+${digits}`;
-  if (digits.length === 13 && digits.startsWith('63')) return `+${digits}`;
-  return '';
-}
-
-export function isValidPhilippinePhone(input: string): boolean {
-  const formatted = formatPhilippinePhone(input);
-  return /^\+63\d{10}$/.test(formatted);
-}
