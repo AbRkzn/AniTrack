@@ -21,6 +21,8 @@ interface AuthState {
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  sendPhoneOtp: (phone: string) => Promise<void>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<void>;
   signOut: () => Promise<void>;
   continueAsGuest: () => Promise<void>;
 }
@@ -139,6 +141,43 @@ export const useAuthStore = create<AuthState>((set) => {
         },
         guestMode: false,
       });
+    },
+
+    verifyPhoneOtp: async (phone, token) => {
+      const client = getSupabaseClient();
+      if (!client) throw new Error('Cloud sync is not configured.');
+      set({ error: null });
+      const { data, error } = await client.auth.verifyOtp({
+        phone,
+        token: token.trim(),
+        type: 'sms',
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('Verification failed.');
+      await clearGuestFlag();
+      set({
+        status: 'signedIn',
+        user: {
+          id: data.user.id,
+          email: data.user.email ?? null,
+          fullName: data.user.user_metadata?.full_name ?? null,
+        },
+        guestMode: false,
+        error: null,
+      });
+    },
+
+    sendPhoneOtp: async (phone) => {
+      const client = getSupabaseClient();
+      if (!client) throw new Error('Cloud sync is not configured.');
+      set({ error: null });
+      const { error } = await client.auth.signInWithOtp({
+        phone,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+      if (error) throw error;
     },
 
     signOut: async () => {
