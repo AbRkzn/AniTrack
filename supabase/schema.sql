@@ -133,6 +133,24 @@ create table if not exists animal_health_records (
 );
 create index if not exists animal_health_records_owner_idx on animal_health_records (owner_id, "updatedAt");
 
+create table if not exists animal_products (
+  id text primary key,
+  owner_id uuid not null default auth.uid(),
+  deleted boolean not null default false,
+  "animalId" text not null,
+  "productType" text not null default 'eggs',
+  date text not null,
+  quantity real not null default 0,
+  unit text not null default 'pcs',
+  "sellingPrice" real not null default 0,
+  buyer text,
+  revenue real not null default 0,
+  notes text not null default '',
+  "createdAt" text not null,
+  "updatedAt" text not null
+);
+create index if not exists animal_products_owner_idx on animal_products (owner_id, "updatedAt");
+
 create table if not exists fields (
   id text primary key,
   owner_id uuid not null default auth.uid(),
@@ -188,6 +206,7 @@ alter table expenses enable row level security;
 alter table fertilizer_schedules enable row level security;
 alter table animals enable row level security;
 alter table animal_health_records enable row level security;
+alter table animal_products enable row level security;
 alter table fields enable row level security;
 alter table farm_tasks enable row level security;
 alter table budgets enable row level security;
@@ -196,7 +215,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['crops','harvests','expenses','fertilizer_schedules','animals','animal_health_records','fields','farm_tasks','budgets']
+  foreach t in array array['crops','harvests','expenses','fertilizer_schedules','animals','animal_health_records','animal_products','fields','farm_tasks','budgets']
   loop
     execute format('drop policy if exists "owner select %1$s" on %1$s;', t);
     execute format('drop policy if exists "owner insert %1$s" on %1$s;', t);

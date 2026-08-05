@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { differenceInCalendarMonths } from 'date-fns';
 import { useAnimalsStore } from '../store/animalsStore';
 import { useAnimalHealthStore } from '../store/animalHealthStore';
+import { useAnimalProductStore } from '../store/animalProductStore';
 import { useAppStore } from '../store/appStore';
 import { Header } from '../components/ui/Header';
 import { Card } from '../components/ui/Card';
@@ -25,8 +26,8 @@ import { Icon } from '../components/ui/Icon';
 import { Button } from '../components/ui/Button';
 import { typography, spacing, ColorScheme, borderRadius } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
-import { formatDate, formatCurrency, formatNumber } from '../utils/helpers';
-import { Animal, AnimalHealthRecord } from '../types';
+import { formatDate, formatCurrency, formatNumber, getStatusLabel } from '../utils/helpers';
+import { Animal, AnimalHealthRecord, AnimalProduct } from '../types';
 
 function getAgeLabel(birthDate?: string): string {
   if (!birthDate) return '';
@@ -81,6 +82,38 @@ function HealthRecordCard({ record, onPress, onLongPress }: { record: AnimalHeal
   );
 }
 
+function ProductCard({ product, onPress, onLongPress }: { product: AnimalProduct; onPress: () => void; onLongPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const currency = useAppStore((s) => s.settings.currency);
+
+  return (
+    <Card style={styles.productCard} padding={spacing.lg} onPress={onPress} onLongPress={onLongPress}>
+      <View style={styles.productHeader}>
+        <View style={[styles.productTypeBadge, { backgroundColor: colors.primaryFaded }]}>
+          <Text style={[styles.productTypeText, { color: colors.primary }]}>{getStatusLabel(product.productType)}</Text>
+        </View>
+        <Text style={styles.productDate}>{formatDate(product.date, 'MMM dd, yyyy')}</Text>
+      </View>
+      <Text style={styles.productQty}>
+        {formatNumber(product.quantity, 1)} {product.unit}
+      </Text>
+      {product.revenue != null && product.revenue > 0 && (
+        <Text style={[styles.productRevenue, { color: colors.primary, fontWeight: '600' }]}>
+          Revenue: {formatCurrency(product.revenue, currency)}
+        </Text>
+      )}
+      {product.sellingPrice != null && product.sellingPrice > 0 && (
+        <Text style={styles.productDetail}>
+          Selling price: {formatCurrency(product.sellingPrice, currency)} / {product.unit}
+        </Text>
+      )}
+      {product.buyer ? <Text style={styles.productDetail}>Buyer: {product.buyer}</Text> : null}
+      {product.notes ? <Text style={styles.productNotes}>{product.notes}</Text> : null}
+    </Card>
+  );
+}
+
 export default function AnimalDetailScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const animalId = typeof id === 'string' && id ? id : undefined;
@@ -96,6 +129,17 @@ export default function AnimalDetailScreen() {
   const fetchRecords = useAnimalHealthStore((s) => s.fetchRecords);
   const deleteRecord = useAnimalHealthStore((s) => s.deleteRecord);
 
+  const products = useAnimalProductStore((s) => s.products.data);
+  const isLoadingProducts = useAnimalProductStore((s) => s.products.isLoading);
+  const productsError = useAnimalProductStore((s) => s.products.error);
+  const fetchProducts = useAnimalProductStore((s) => s.fetchProducts);
+  const deleteProduct = useAnimalProductStore((s) => s.deleteProduct);
+
+  const totalProductRevenue = useMemo(
+    () => products.reduce((sum, p) => sum + (p.revenue ?? 0), 0),
+    [products]
+  );
+
   const [animal, setAnimal] = useState<Animal | null>(null);
   const [loadingAnimal, setLoadingAnimal] = useState(!!animalId);
 
@@ -108,11 +152,12 @@ export default function AnimalDetailScreen() {
         if (mounted) setAnimal(result);
         setLoadingAnimal(false);
         await fetchRecords(animalId);
+        await fetchProducts(animalId);
       })();
       return () => {
         mounted = false;
       };
-    }, [animalId, getAnimalById, fetchRecords])
+    }, [animalId, getAnimalById, fetchRecords, fetchProducts])
   );
 
   const confirmDeleteAnimal = useCallback(() => {
@@ -152,6 +197,26 @@ export default function AnimalDetailScreen() {
       ]);
     },
     [deleteRecord]
+  );
+
+  const confirmDeleteProduct = useCallback(
+    (product: AnimalProduct) => {
+      Alert.alert('Delete Product', 'This will permanently delete this product record.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProduct(product.id);
+            } catch {
+              Alert.alert('Error', 'Failed to delete product record.');
+            }
+          },
+        },
+      ]);
+    },
+    [deleteProduct]
   );
 
   if (loadingAnimal) {
@@ -198,8 +263,11 @@ export default function AnimalDetailScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isLoadingRecords}
-            onRefresh={() => fetchRecords(animal.id)}
+            refreshing={isLoadingRecords || isLoadingProducts}
+            onRefresh={() => {
+              fetchRecords(animal.id);
+              fetchProducts(animal.id);
+            }}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />
@@ -236,6 +304,48 @@ export default function AnimalDetailScreen() {
               {animal.notes ? <Text style={styles.notes}>{animal.notes}</Text> : null}
               <Button title="Delete Animal" variant="danger" onPress={confirmDeleteAnimal} fullWidth style={styles.deleteButton} />
             </Card>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Products</Text>
+              <View style={styles.sectionHeaderRight}>
+                <Text style={styles.sectionCount}>{products.length}</Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/animal-product-form?animalId=${animal.id}`)}
+                  style={[styles.addButton, { backgroundColor: colors.primary }]}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="add" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {products.length > 0 && (
+              <Card padding={spacing.lg} style={styles.revenueCard}>
+                <View style={styles.revenueRow}>
+                  <Icon name="cash-outline" size={20} color={colors.primary} />
+                  <Text style={styles.revenueLabel}>Total Production Revenue</Text>
+                </View>
+                <Text style={styles.revenueValue}>{formatCurrency(totalProductRevenue, currency)}</Text>
+              </Card>
+            )}
+
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onPress={() => router.push(`/animal-product-form?id=${product.id}&animalId=${animal.id}`)}
+                onLongPress={() => confirmDeleteProduct(product)}
+              />
+            ))}
+
+            {!isLoadingProducts && !productsError && products.length === 0 && (
+              <Card padding={spacing.lg} style={styles.productEmpty}>
+                <Text style={styles.productEmptyText}>
+                  No products logged yet. Track eggs, milk, or other produce to see revenue here.
+                </Text>
+              </Card>
+            )}
+            {productsError && <Text style={styles.errorText}>{productsError}</Text>}
 
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Health Records</Text>
@@ -314,8 +424,61 @@ const createStyles = (colors: ColorScheme) =>
       justifyContent: 'space-between',
       marginBottom: spacing.md,
     },
+    sectionHeaderRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    addButton: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     sectionTitle: { ...typography.h4, color: colors.textPrimary },
     sectionCount: { ...typography.bodySmall, color: colors.textSecondary },
+    revenueCard: { marginBottom: spacing.md },
+    revenueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    revenueLabel: { ...typography.bodySmall, color: colors.textSecondary },
+    revenueValue: { ...typography.h3, color: colors.primary, fontWeight: '700' },
+    productEmpty: { marginBottom: spacing.md },
+    productEmptyText: { ...typography.bodySmall, color: colors.textSecondary },
+    productCard: { marginBottom: spacing.md },
+    productHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.sm,
+    },
+    productTypeBadge: {
+      borderRadius: borderRadius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    productTypeText: { ...typography.caption, fontWeight: '700' },
+    productDate: { ...typography.caption, color: colors.textSecondary },
+    productQty: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: spacing.xs,
+    },
+    productRevenue: { ...typography.bodySmall, marginBottom: 2 },
+    productDetail: { ...typography.bodySmall, color: colors.textSecondary, marginBottom: 2 },
+    productNotes: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: spacing.sm,
+      backgroundColor: colors.surfaceVariant,
+      borderRadius: borderRadius.sm,
+      padding: spacing.sm,
+    },
     recordCard: { marginBottom: spacing.md },
     recordHeader: {
       flexDirection: 'row',

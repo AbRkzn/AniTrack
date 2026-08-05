@@ -173,6 +173,21 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase): Promise<void
       updatedAt TEXT NOT NULL DEFAULT '',
       FOREIGN KEY (animalId) REFERENCES animals(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS animal_products (
+      id TEXT PRIMARY KEY,
+      animalId TEXT NOT NULL,
+      productType TEXT NOT NULL DEFAULT 'eggs',
+      date TEXT NOT NULL,
+      quantity REAL NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT 'pcs',
+      sellingPrice REAL NOT NULL DEFAULT 0,
+      buyer TEXT,
+      revenue REAL NOT NULL DEFAULT 0,
+      notes TEXT NOT NULL DEFAULT '',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL DEFAULT '',
+      FOREIGN KEY (animalId) REFERENCES animals(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS fields (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

@@ -9,6 +9,7 @@ export type SyncTable =
   | 'fertilizer_schedules'
   | 'animals'
   | 'animal_health_records'
+  | 'animal_products'
   | 'fields'
   | 'farm_tasks'
   | 'budgets';
@@ -20,6 +21,7 @@ export const SYNC_TABLES: SyncTable[] = [
   'fertilizer_schedules',
   'animals',
   'animal_health_records',
+  'animal_products',
   'fields',
   'farm_tasks',
   'budgets',

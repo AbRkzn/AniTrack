@@ -192,6 +192,23 @@ export interface AnimalHealthRecord {
   updatedAt: string;
 }
 
+export type AnimalProductType = 'eggs' | 'milk' | 'wool' | 'meat' | 'honey' | 'manure' | 'other';
+
+export interface AnimalProduct {
+  id: string;
+  animalId: string;
+  productType: AnimalProductType;
+  date: string;
+  quantity: number;
+  unit: string;
+  sellingPrice?: number;
+  buyer?: string;
+  revenue?: number;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Sync & Offline Types
 // ---------------------------------------------------------------------------
@@ -330,6 +347,7 @@ export type FertilizerFormData = Omit<FertilizerApplication, 'id' | 'createdAt' 
 export type HarvestFormData = Omit<Harvest, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalFormData = Omit<Animal, 'id' | 'createdAt' | 'updatedAt'>;
 export type AnimalHealthFormData = Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>;
+export type AnimalProductFormData = Omit<AnimalProduct, 'id' | 'createdAt' | 'updatedAt'>;
 export type FieldFormData = Omit<Field, 'id' | 'createdAt' | 'updatedAt'>;
 export type TaskFormData = Omit<FarmTask, 'id' | 'createdAt' | 'updatedAt'>;
 export type BudgetFormData = Omit<Budget, 'id' | 'createdAt' | 'updatedAt'>;
@@ -388,6 +406,13 @@ export interface AnimalQuery extends QueryOptions {
 export interface AnimalHealthQuery extends QueryOptions {
   animalId?: string;
   type?: AnimalHealthType;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface AnimalProductQuery extends QueryOptions {
+  animalId?: string;
+  productType?: AnimalProductType;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -501,6 +526,7 @@ export type DatabaseTable =
   | 'budgets'
   | 'animals'
   | 'animal_health_records'
+  | 'animal_products'
   | 'sync_queue'
   | 'backups'
   | 'settings';
@@ -574,4 +600,8 @@ export function isAnimalStatus(value: string): value is AnimalStatus {
 
 export function isAnimalHealthType(value: string): value is AnimalHealthType {
   return ['examination', 'vaccination', 'treatment', 'surgery'].includes(value);
+}
+
+export function isAnimalProductType(value: string): value is AnimalProductType {
+  return ['eggs', 'milk', 'wool', 'meat', 'honey', 'manure', 'other'].includes(value);
 }

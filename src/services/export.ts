@@ -15,6 +15,7 @@ export type ExportDataset =
   | 'fertilizer'
   | 'animals'
   | 'health_records'
+  | 'animal_products'
   | 'tasks'
   | 'fields'
   | 'budgets';
@@ -26,6 +27,7 @@ export const EXPORT_DATASETS: { key: ExportDataset; label: string; icon: IconNam
   { key: 'fertilizer', label: 'Fertilizer Applications', icon: 'flask-outline' },
   { key: 'animals', label: 'Animals', icon: 'paw-outline' },
   { key: 'health_records', label: 'Animal Health Records', icon: 'medkit-outline' },
+  { key: 'animal_products', label: 'Animal Products', icon: 'egg-outline' },
   { key: 'tasks', label: 'Farm Tasks', icon: 'checkmark-done-outline' },
   { key: 'fields', label: 'Land Fields', icon: 'map-outline' },
   { key: 'budgets', label: 'Budgets', icon: 'pie-chart-outline' },
@@ -217,6 +219,28 @@ async function buildHealthRecordsSheet(): Promise<XlsxSheet> {
   };
 }
 
+async function buildAnimalProductsSheet(): Promise<XlsxSheet> {
+  const rows = await queryAll<any>(
+    `SELECT ap.*, a.tagNumber, a.name AS animalName FROM animal_products ap LEFT JOIN animals a ON a.id = ap.animalId ORDER BY ap.date DESC`
+  );
+  return {
+    name: 'Animal Products',
+    columns: ['Animal', 'Product', 'Date', 'Quantity', 'Unit', 'Selling Price', 'Buyer', 'Revenue', 'Notes', 'Created At'],
+    rows: rows.map((r) => [
+      r.animalName || r.tagNumber || r.animalId,
+      getStatusLabel(r.productType),
+      r.date,
+      r.quantity,
+      r.unit,
+      r.sellingPrice ?? '',
+      r.buyer || '',
+      r.revenue ?? '',
+      r.notes,
+      r.createdAt,
+    ]),
+  };
+}
+
 async function buildTasksSheet(): Promise<XlsxSheet> {
   const rows = await queryAll<any>(
     `SELECT t.*, c.name AS cropName, f.name AS fieldName FROM farm_tasks t
@@ -268,6 +292,7 @@ const SHEET_BUILDERS: Record<ExportDataset, () => Promise<XlsxSheet>> = {
   fertilizer: buildFertilizerSheet,
   animals: buildAnimalsSheet,
   health_records: buildHealthRecordsSheet,
+  animal_products: buildAnimalProductsSheet,
   tasks: buildTasksSheet,
   fields: buildFieldsSheet,
   budgets: buildBudgetsSheet,
@@ -291,6 +316,7 @@ export function getExportFileName(dataset: ExportDataset): string {
     fertilizer: 'fertilizer-applications',
     animals: 'animals',
     health_records: 'animal-health-records',
+    animal_products: 'animal-products',
     tasks: 'farm-tasks',
     fields: 'fields',
     budgets: 'budgets',
