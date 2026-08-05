@@ -7,6 +7,7 @@ import { useCropsStore } from '../../store/cropsStore';
 import { useExpensesStore } from '../../store/expensesStore';
 import { useHarvestsStore } from '../../store/harvestsStore';
 import { useAnimalsStore } from '../../store/animalsStore';
+import { useAnimalProductStore } from '../../store/animalProductStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useBudgetStore } from '../../store/budgetStore';
 import { useAppStore } from '../../store/appStore';
@@ -54,6 +55,7 @@ export default function DashboardScreen() {
   const expenses = useExpensesStore((s) => s.expenses.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
   const animals = useAnimalsStore((s) => s.animals.data);
+  const products = useAnimalProductStore((s) => s.products.data);
   const tasks = useTaskStore((s) => s.tasks.data);
   const budgets = useBudgetStore((s) => s.budgets.data);
   const isOnline = useAppStore((s) => s.isOnline);
@@ -63,6 +65,7 @@ export default function DashboardScreen() {
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchAnimals = useAnimalsStore((s) => s.fetchAnimals);
+  const fetchAllProducts = useAnimalProductStore((s) => s.fetchAllProducts);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const fetchBudgets = useBudgetStore((s) => s.fetchBudgets);
 
@@ -72,16 +75,18 @@ export default function DashboardScreen() {
       fetchExpenses();
       fetchHarvests();
       fetchAnimals();
+      fetchAllProducts();
       fetchTasks();
       fetchBudgets();
-    }, [fetchCrops, fetchExpenses, fetchHarvests, fetchAnimals, fetchTasks, fetchBudgets])
+    }, [fetchCrops, fetchExpenses, fetchHarvests, fetchAnimals, fetchAllProducts, fetchTasks, fetchBudgets])
   );
 
   const activeCrops = crops.filter((c) => c.status === 'growing').length;
   const today = new Date().toISOString().split('T')[0];
   const monthKey = format(new Date(), 'yyyy-MM');
   const monthlyExpenses = expenses.filter((e) => e.date.startsWith(monthKey)).reduce((sum, e) => sum + e.amount, 0);
-  const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
+  const productRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
+  const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0) + productRevenue;
   const activeAnimals = animals.filter((a) => a.status === 'active').length;
   const openTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled').length;
   const overdueTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && t.dueDate < today);
@@ -130,6 +135,7 @@ export default function DashboardScreen() {
           <StatCard title="Total Animals" value={animals.length} icon="paw-outline" style={styles.statHalf} />
           <StatCard title="Open Tasks" value={openTasks} icon="checkmark-done" color={colors.chartTeal} style={styles.statHalf} />
           <StatCard title="Monthly Expenses" value={formatCurrency(monthlyExpenses, settings.currency)} icon="cash-outline" color={colors.error} style={styles.statHalf} />
+          <StatCard title="Products Logged" value={products.length} icon="egg-outline" color={colors.warning} style={styles.statHalf} />
           <StatCard title="Revenue" value={formatCurrency(totalRevenue, settings.currency)} icon="trending-up" color={colors.primary} style={styles.statHalf} />
           <StatCard title="Over Budget" value={overBudgetCount} icon="warning-outline" color={overBudgetCount > 0 ? colors.error : colors.success} style={styles.statHalf} />
         </View>

@@ -6,6 +6,7 @@ interface AnimalProductState {
   products: AsyncState<AnimalProduct[]>;
   selectedProduct: AnimalProduct | null;
   fetchProducts: (animalId: string) => Promise<void>;
+  fetchAllProducts: () => Promise<void>;
   getProductById: (id: string) => Promise<AnimalProduct | null>;
   addProduct: (data: Omit<AnimalProduct, 'id' | 'createdAt' | 'updatedAt'>) => Promise<AnimalProduct>;
   updateProduct: (id: string, data: Partial<Omit<AnimalProduct, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<AnimalProduct>;
@@ -25,6 +26,16 @@ export const useAnimalProductStore = create<AnimalProductState>((set, get) => ({
     set((state) => ({ products: { ...state.products, isLoading: true, error: null } }));
     try {
       const data = await repository.getByAnimalId(animalId);
+      set({ products: { data, isLoading: false, error: null } });
+    } catch (error) {
+      set({ products: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch products' } });
+    }
+  },
+
+  fetchAllProducts: async () => {
+    set((state) => ({ products: { ...state.products, isLoading: true, error: null } }));
+    try {
+      const data = await repository.getAll();
       set({ products: { data, isLoading: false, error: null } });
     } catch (error) {
       set({ products: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch products' } });

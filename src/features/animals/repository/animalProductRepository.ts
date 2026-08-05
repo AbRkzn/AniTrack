@@ -3,6 +3,40 @@ import { queryAll, queryFirst, executeSql } from '../../../database';
 import { recordSyncChange } from '../../../services/syncQueue';
 
 export class AnimalProductRepository {
+  async getAll(query?: AnimalProductQuery): Promise<AnimalProduct[]> {
+    let sql = 'SELECT * FROM animal_products';
+    const params: any[] = [];
+    const conditions: string[] = [];
+
+    if (query?.productType) {
+      conditions.push('productType = ?');
+      params.push(query.productType);
+    }
+
+    if (query?.dateFrom) {
+      conditions.push('date >= ?');
+      params.push(query.dateFrom);
+    }
+
+    if (query?.dateTo) {
+      conditions.push('date <= ?');
+      params.push(query.dateTo);
+    }
+
+    if (conditions.length > 0) {
+      sql += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    sql += ' ORDER BY date DESC, createdAt DESC';
+    if (query?.limit) {
+      sql += ` LIMIT ${query.limit}`;
+      if (query.offset) sql += ` OFFSET ${query.offset}`;
+    }
+
+    const rows = await queryAll<any>(sql, params);
+    return rows.map(this.mapRowToRecord);
+  }
+
   async getByAnimalId(animalId: string, query?: AnimalProductQuery): Promise<AnimalProduct[]> {
     let sql = 'SELECT * FROM animal_products WHERE animalId = ?';
     const params: any[] = [animalId];
