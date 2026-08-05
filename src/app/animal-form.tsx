@@ -6,6 +6,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -141,6 +142,16 @@ export default function AnimalFormScreen() {
 
   const [loading, setLoading] = useState(isEditing);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const breedOptions = useMemo(() => {
     const list = BREED_BY_SPECIES[watch('species')] ?? ['Local', 'Improved', 'Hybrid'];
@@ -240,7 +251,10 @@ export default function AnimalFormScreen() {
       <Header title={isEditing ? 'Edit Animal' : 'Add Animal'} leftAction={{ icon: 'close', onPress: () => router.back() }} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            Platform.OS === 'android' && { paddingBottom: spacing.xxxl + keyboardHeight },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
