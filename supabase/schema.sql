@@ -190,9 +190,9 @@ declare
 begin
   foreach t in array array['crops','harvests','expenses','fertilizer_schedules','animals','animal_health_records','fields','farm_tasks','budgets']
   loop
-    execute format('create policy "owner select %1$s" on %1$s for select using (auth.uid() = owner_id);', t);
-    execute format('create policy "owner insert %1$s" on %1$s for insert with check (auth.uid() = owner_id);', t);
-    execute format('create policy "owner update %1$s" on %1$s for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);', t);
-    execute format('create policy "owner delete %1$s" on %1$s for delete using (auth.uid() = owner_id);', t);
+    execute format('create policy if not exists "owner select %1$s" on %1$s for select using (auth.uid() = owner_id);', t);
+    execute format('create policy if not exists "owner insert %1$s" on %1$s for insert with check (auth.uid() = owner_id);', t);
+    execute format('create policy if not exists "owner update %1$s" on %1$s for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);', t);
+    execute format('create policy if not exists "owner delete %1$s" on %1$s for delete using (auth.uid() = owner_id);', t);
   end loop;
 end $$;
