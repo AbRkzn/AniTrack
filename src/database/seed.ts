@@ -1,4 +1,5 @@
 import { getDatabase } from './index';
+import { setSyncQueueSuspended } from '../services/syncQueue';
 import { CropRepository } from '../features/crops/repository/cropRepository';
 import { HarvestRepository } from '../features/harvests/repository/harvestRepository';
 import { ExpenseRepository } from '../features/expenses/repository/expenseRepository';
@@ -853,6 +854,7 @@ export async function clearAppData(): Promise<void> {
   await db.runAsync('DELETE FROM animal_health_records');
   await db.runAsync('DELETE FROM animals');
   await db.runAsync('DELETE FROM settings WHERE key = ?', [SEED_FLAG]);
+  await db.runAsync('DELETE FROM sync_queue');
 }
 
 async function insertSampleData(): Promise<void> {
@@ -869,29 +871,40 @@ async function insertSampleData(): Promise<void> {
   await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [SEED_FLAG, '1']);
 }
 
+async function suspendSyncQueue<T>(fn: () => Promise<T>): Promise<T> {
+  setSyncQueueSuspended(true);
+  try {
+    return await fn();
+  } finally {
+    setSyncQueueSuspended(false);
+  }
+}
+
 export async function seedSampleData(): Promise<void> {
   await clearAppData();
-  await insertSampleData();
+  await suspendSyncQueue(() => insertSampleData());
 }
 
 export async function seedIfEmpty(): Promise<void> {
   const db = await getDatabase();
 
-  await seedAnimalsIfEmpty();
-  await seedHealthRecordsIfEmpty();
-  await seedHealthRecordExpensesIfEmpty();
+  await suspendSyncQueue(async () => {
+    await seedAnimalsIfEmpty();
+    await seedHealthRecordsIfEmpty();
+    await seedHealthRecordExpensesIfEmpty();
 
-  const flagged = await db.getFirstAsync<{ value: string }>(
-    'SELECT value FROM settings WHERE key = ?',
-    [SEED_FLAG]
-  );
-  if (flagged) return;
+    const flagged = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM settings WHERE key = ?',
+      [SEED_FLAG]
+    );
+    if (flagged) return;
 
-  const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM crops');
-  if (existing && existing.count > 0) {
-    await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [SEED_FLAG, '1']);
-    return;
-  }
+    const existing = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM crops');
+    if (existing && existing.count > 0) {
+      await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [SEED_FLAG, '1']);
+      return;
+    }
 
-  await insertSampleData();
+    await insertSampleData();
+  });
 }

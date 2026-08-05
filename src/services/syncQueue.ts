@@ -40,6 +40,13 @@ export interface SyncQueueRow {
 
 let pendingHint = 0;
 
+let suspended = false;
+
+/** Temporarily stop recording sync changes (used while seeding demo data). */
+export function setSyncQueueSuspended(value: boolean): void {
+  suspended = value;
+}
+
 export function setPendingHint(count: number): void {
   pendingHint = count;
 }
@@ -49,6 +56,7 @@ export function getPendingHint(): number {
 }
 
 export function recordSyncChange(table: SyncTable, operation: SyncOperation, recordId: string): Promise<void> {
+  if (suspended) return Promise.resolve();
   const id = `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const now = new Date().toISOString();
   pendingHint += 1;
@@ -75,6 +83,17 @@ export async function ensureInitialUpload(userId: string): Promise<number> {
     [flagKey]
   );
   if (existing?.value === '1') return 0;
+
+  // Never auto-upload seeded demo data into a user's cloud account.
+  // Real user data is always created through repositories, which queue
+  // their own sync changes, so this bulk upload is only a safety net for
+  // rows that never went through the queue.
+  const seedFlag = await queryFirst<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ?',
+    ['sample_data_seeded']
+  );
+  if (seedFlag?.value === '1') return 0;
+
   await executeSql('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [flagKey, '1']);
 
   let count = 0;
