@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Keyboard,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -20,6 +21,7 @@ import { useCropsStore } from '../store/cropsStore';
 import { useFieldsStore } from '../store/fieldsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
@@ -72,6 +74,16 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 const NONE = '__none__';
 const today = () => new Date().toISOString().split('T')[0];
 
+const ASSIGNED_TO_OPTIONS = [
+  'Farm Owner',
+  'Farm Manager',
+  'Farmhand',
+  'Assistant',
+  'Veterinarian',
+  'Contractor',
+  'Family Member',
+];
+
 export default function TaskFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const taskId = typeof id === 'string' && id ? id : undefined;
@@ -114,6 +126,16 @@ export default function TaskFormScreen() {
   const reminderEnabled = watch('reminderEnabled');
 
   const [loading, setLoading] = useState(isEditing);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (crops.length === 0) fetchCrops();
@@ -212,7 +234,10 @@ export default function TaskFormScreen() {
       />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            Platform.OS === 'android' && { paddingBottom: spacing.xxxl + keyboardHeight },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -257,11 +282,15 @@ export default function TaskFormScreen() {
             value={watch('fieldId')}
             onChange={(value) => setValue('fieldId', value, { shouldValidate: true })}
           />
-          <Input
+          <Select
             label="Assigned to"
-            placeholder="e.g. Farmhand"
+            placeholder="Choose or type a name"
+            options={ASSIGNED_TO_OPTIONS.map((o) => ({ label: o, value: o }))}
+            value={watch('assignedTo')}
+            onChange={(v) => setValue('assignedTo', v, { shouldValidate: true })}
+            allowCustom
+            searchable
             error={errors.assignedTo?.message}
-            {...register('assignedTo')}
           />
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Set a reminder</Text>
