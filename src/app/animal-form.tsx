@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAnimalsStore } from '../store/animalsStore';
 import { Header } from '../components/ui/Header';
 import { Input, TextArea } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { DateField } from '../components/ui/DateField';
 import { ChipSelect } from '../components/ui/ChipSelect';
 import { Button } from '../components/ui/Button';
@@ -38,6 +39,53 @@ const SEX_OPTIONS: { label: string; value: 'male' | 'female' }[] = [
   { label: 'Female', value: 'female' },
   { label: 'Male', value: 'male' },
 ];
+
+const SPECIES_OPTIONS = [
+  'Cattle',
+  'Carabao',
+  'Goat',
+  'Sheep',
+  'Pig',
+  'Chicken',
+  'Duck',
+  'Horse',
+  'Turkey',
+  'Quail',
+];
+
+const BREED_BY_SPECIES: Record<string, string[]> = {
+  Cattle: ['Brahman', 'Hereford', 'Angus', 'Holstein', 'Jersey', 'Brangus', 'Native'],
+  Carabao: ['Murrah', 'Native Swamp', 'Bulgarian Murrah'],
+  Goat: ['Boer', 'Anglo-Nubian', 'Saanen', 'Native'],
+  Sheep: ['Dorper', 'Katahdin', 'Native'],
+  Pig: ['Landrace', 'Large White', 'Duroc', 'Pietrain', 'Native'],
+  Chicken: ['Broiler', 'Layer', 'Banaba', 'Leghorn'],
+  Duck: ['Pekin', 'Muscovy', 'Mallard'],
+  Horse: ['Thoroughbred', 'Quarter Horse', 'Philippine Pony'],
+  Turkey: ['Broad Breasted White', 'Bronze'],
+  Quail: ['Japanese', 'Coturnix'],
+};
+
+const WEIGHT_BY_SPECIES: Record<string, string[]> = {
+  Cattle: ['150', '200', '250', '300', '350', '400', '450', '500'],
+  Carabao: ['200', '300', '400', '500', '600', '700'],
+  Goat: ['20', '30', '40', '50', '60', '70', '80'],
+  Sheep: ['25', '35', '45', '55', '65', '75'],
+  Pig: ['30', '50', '70', '90', '110', '130'],
+  Chicken: ['1', '1.5', '2', '2.5', '3'],
+  Duck: ['1.5', '2', '2.5', '3', '3.5'],
+  Horse: ['300', '400', '450', '500'],
+  Turkey: ['5', '8', '10', '12', '15'],
+  Quail: ['0.1', '0.15', '0.2', '0.25'],
+};
+
+const DEFAULT_WEIGHTS = ['1', '5', '10', '20', '50', '100', '150', '200', '300', '400', '500'];
+
+const WEIGHT_UNITS = ['kg', 'lbs', 'g', 'tons'];
+
+const LOCATIONS = ['Barn 1', 'Barn 2', 'Barn 3', 'Pasture', 'Pens', 'Poultry House', 'Feedlot', 'Breeding Area', 'Isolation Pen', 'Free Range'];
+
+const TAG_NUMBER_PRESETS = ['A-001', 'B-001', 'C-001', 'D-001', 'E-001', 'F-001', 'G-001'];
 
 const animalSchema = z.object({
   tagNumber: z.string().min(1, 'Tag number is required'),
@@ -93,6 +141,16 @@ export default function AnimalFormScreen() {
 
   const [loading, setLoading] = useState(isEditing);
   const [photos, setPhotos] = useState<string[]>([]);
+
+  const breedOptions = useMemo(() => {
+    const list = BREED_BY_SPECIES[watch('species')] ?? ['Local', 'Improved', 'Hybrid'];
+    return list.map((b) => ({ label: b, value: b }));
+  }, [watch('species')]);
+
+  const weightOptions = useMemo(() => {
+    const list = WEIGHT_BY_SPECIES[watch('species')] ?? DEFAULT_WEIGHTS;
+    return list.map((w) => ({ label: w, value: w }));
+  }, [watch('species')]);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -186,20 +244,34 @@ export default function AnimalFormScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <Input
+          <Select
             label="Tag number *"
-            placeholder="e.g. A-001"
+            placeholder="Choose a tag"
+            options={TAG_NUMBER_PRESETS.map((t) => ({ label: t, value: t }))}
+            value={watch('tagNumber')}
+            onChange={(v) => setValue('tagNumber', v, { shouldValidate: true })}
+            allowCustom
             error={errors.tagNumber?.message}
-            {...register('tagNumber')}
           />
           <Input label="Name" placeholder="e.g. Daisy" error={errors.name?.message} {...register('name')} />
-          <Input
+          <Select
             label="Species *"
-            placeholder="e.g. Cattle"
+            placeholder="Choose a species"
+            options={SPECIES_OPTIONS.map((s) => ({ label: s, value: s }))}
+            value={watch('species')}
+            onChange={(v) => setValue('species', v, { shouldValidate: true })}
+            allowCustom
             error={errors.species?.message}
-            {...register('species')}
           />
-          <Input label="Breed" placeholder="e.g. Brahman" error={errors.breed?.message} {...register('breed')} />
+          <Select
+            label="Breed"
+            placeholder="Choose a breed"
+            options={breedOptions}
+            value={watch('breed')}
+            onChange={(v) => setValue('breed', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.breed?.message}
+          />
           <DateField
             label="Birth date (YYYY-MM-DD)"
             value={watch('birthDate')}
@@ -216,20 +288,25 @@ export default function AnimalFormScreen() {
           />
           <View style={styles.row}>
             <View style={styles.rowItem}>
-              <Input
+              <Select
                 label="Weight"
-                placeholder="0"
-                keyboardType="numeric"
+                placeholder="Choose"
+                options={weightOptions}
+                value={watch('weight')}
+                onChange={(v) => setValue('weight', v, { shouldValidate: true })}
+                allowCustom
                 error={errors.weight?.message}
-                {...register('weight')}
               />
             </View>
             <View style={styles.rowItem}>
-              <Input
+              <Select
                 label="Weight unit"
                 placeholder="kg"
+                options={WEIGHT_UNITS.map((u) => ({ label: u, value: u }))}
+                value={watch('weightUnit')}
+                onChange={(v) => setValue('weightUnit', v, { shouldValidate: true })}
+                allowCustom
                 error={errors.weightUnit?.message}
-                {...register('weightUnit')}
               />
             </View>
           </View>
@@ -240,7 +317,15 @@ export default function AnimalFormScreen() {
             onChange={(value) => setValue('status', value as AnimalStatus, { shouldValidate: true })}
             error={errors.status?.message}
           />
-          <Input label="Location" placeholder="e.g. Barn 2" error={errors.location?.message} {...register('location')} />
+          <Select
+            label="Location"
+            placeholder="Choose a location"
+            options={LOCATIONS.map((l) => ({ label: l, value: l }))}
+            value={watch('location')}
+            onChange={(v) => setValue('location', v, { shouldValidate: true })}
+            allowCustom
+            error={errors.location?.message}
+          />
           <TextArea label="Notes" placeholder="Optional notes..." error={errors.notes?.message} {...register('notes')} />
           <PhotoPicker photos={photos} onChange={setPhotos} />
           <Button
