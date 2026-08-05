@@ -2,6 +2,14 @@
 -- Run this in the Supabase SQL editor (or via `supabase db push`).
 -- Tables mirror the app's local SQLite schema (camelCase columns, TEXT ids).
 -- Every synced row is owned by a user (owner_id) and supports soft-delete (deleted).
+--
+-- NOTE: camelCase identifiers MUST be double-quoted. Unquoted identifiers are
+-- folded to lowercase by Postgres (e.g. `updatedAt` becomes `updatedat`), which
+-- breaks the app's PostgREST queries. If you previously created these tables
+-- WITHOUT quotes, drop them first (the tables are empty) and re-run this file:
+--   drop table if exists crops cascade;
+--   drop table if exists harvests cascade;
+--   ... (one per table)
 
 create table if not exists crops (
   id text primary key,
@@ -9,109 +17,109 @@ create table if not exists crops (
   deleted boolean not null default false,
   name text not null,
   variety text not null default '',
-  fieldLocation text not null default '',
-  fieldId text,
-  plantingDate text not null,
-  expectedHarvestDate text not null,
-  actualHarvestDate text,
+  "fieldLocation" text not null default '',
+  "fieldId" text,
+  "plantingDate" text not null,
+  "expectedHarvestDate" text not null,
+  "actualHarvestDate" text,
   status text not null default 'growing',
   notes text not null default '',
   photos text not null default '[]',
-  yieldEstimate real not null default 0,
-  yieldUnit text not null default 'kg',
-  createdAt text not null,
-  updatedAt text not null
+  "yieldEstimate" real not null default 0,
+  "yieldUnit" text not null default 'kg',
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists crops_owner_idx on crops (owner_id, updatedAt);
+create index if not exists crops_owner_idx on crops (owner_id, "updatedAt");
 
 create table if not exists harvests (
   id text primary key,
   owner_id uuid not null default auth.uid(),
   deleted boolean not null default false,
-  cropId text not null,
-  harvestDate text not null,
+  "cropId" text not null,
+  "harvestDate" text not null,
   quantity real not null default 0,
   unit text not null default 'kg',
   quality text,
-  moistureContent real,
+  "moistureContent" real,
   photos text not null default '[]',
   notes text not null default '',
-  sellingPrice real not null default 0,
+  "sellingPrice" real not null default 0,
   buyer text,
   revenue real not null default 0,
-  createdAt text not null,
-  updatedAt text not null
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists harvests_owner_idx on harvests (owner_id, updatedAt);
+create index if not exists harvests_owner_idx on harvests (owner_id, "updatedAt");
 
 create table if not exists expenses (
   id text primary key,
   owner_id uuid not null default auth.uid(),
   deleted boolean not null default false,
-  cropId text,
+  "cropId" text,
   category text not null default 'other',
   amount real not null default 0,
   currency text not null default 'PHP',
   date text not null,
   vendor text,
-  receiptPhoto text,
+  "receiptPhoto" text,
   notes text not null default '',
   recurring integer not null default 0,
-  recurringInterval text,
-  healthRecordId text,
-  recurringSourceId text,
-  createdAt text not null,
-  updatedAt text not null
+  "recurringInterval" text,
+  "healthRecordId" text,
+  "recurringSourceId" text,
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists expenses_owner_idx on expenses (owner_id, updatedAt);
+create index if not exists expenses_owner_idx on expenses (owner_id, "updatedAt");
 
 create table if not exists fertilizer_schedules (
   id text primary key,
   owner_id uuid not null default auth.uid(),
   deleted boolean not null default false,
-  cropId text not null,
-  fertilizerName text not null,
-  fertilizerType text not null default 'compound',
-  applicationMethod text not null default 'broadcast',
-  amountPerUnit real not null default 0,
-  totalAmount real not null default 0,
+  "cropId" text not null,
+  "fertilizerName" text not null,
+  "fertilizerType" text not null default 'compound',
+  "applicationMethod" text not null default 'broadcast',
+  "amountPerUnit" real not null default 0,
+  "totalAmount" real not null default 0,
   unit text not null default 'kg',
-  scheduledDate text not null,
-  completedDate text,
+  "scheduledDate" text not null,
+  "completedDate" text,
   status text not null default 'pending',
   notes text not null default '',
-  reminderEnabled integer not null default 1,
-  createdAt text not null,
-  updatedAt text not null
+  "reminderEnabled" integer not null default 1,
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists fertilizer_schedules_owner_idx on fertilizer_schedules (owner_id, updatedAt);
+create index if not exists fertilizer_schedules_owner_idx on fertilizer_schedules (owner_id, "updatedAt");
 
 create table if not exists animals (
   id text primary key,
   owner_id uuid not null default auth.uid(),
   deleted boolean not null default false,
-  tagNumber text not null,
+  "tagNumber" text not null,
   name text,
   species text not null default 'Cattle',
   breed text,
-  birthDate text,
+  "birthDate" text,
   sex text not null default 'female',
   weight real,
-  weightUnit text not null default 'kg',
+  "weightUnit" text not null default 'kg',
   status text not null default 'active',
   location text not null default '',
   notes text not null default '',
   photos text not null default '[]',
-  createdAt text not null,
-  updatedAt text not null
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists animals_owner_idx on animals (owner_id, updatedAt);
+create index if not exists animals_owner_idx on animals (owner_id, "updatedAt");
 
 create table if not exists animal_health_records (
   id text primary key,
   owner_id uuid not null default auth.uid(),
   deleted boolean not null default false,
-  animalId text not null,
+  "animalId" text not null,
   date text not null,
   type text not null default 'examination',
   diagnosis text,
@@ -120,10 +128,10 @@ create table if not exists animal_health_records (
   veterinarian text,
   cost real,
   notes text not null default '',
-  createdAt text not null,
-  updatedAt text not null
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists animal_health_records_owner_idx on animal_health_records (owner_id, updatedAt);
+create index if not exists animal_health_records_owner_idx on animal_health_records (owner_id, "updatedAt");
 
 create table if not exists fields (
   id text primary key,
@@ -131,12 +139,12 @@ create table if not exists fields (
   deleted boolean not null default false,
   name text not null,
   acreage real not null default 0,
-  soilType text not null default '',
+  "soilType" text not null default '',
   notes text not null default '',
-  createdAt text not null,
-  updatedAt text not null
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists fields_owner_idx on fields (owner_id, updatedAt);
+create index if not exists fields_owner_idx on fields (owner_id, "updatedAt");
 
 create table if not exists farm_tasks (
   id text primary key,
@@ -147,17 +155,17 @@ create table if not exists farm_tasks (
   category text not null default 'other',
   priority text not null default 'medium',
   status text not null default 'pending',
-  dueDate text not null,
-  cropId text,
-  fieldId text,
-  assignedTo text,
-  reminderEnabled integer not null default 0,
-  reminderDate text,
-  completedDate text,
-  createdAt text not null,
-  updatedAt text not null
+  "dueDate" text not null,
+  "cropId" text,
+  "fieldId" text,
+  "assignedTo" text,
+  "reminderEnabled" integer not null default 0,
+  "reminderDate" text,
+  "completedDate" text,
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists farm_tasks_owner_idx on farm_tasks (owner_id, updatedAt);
+create index if not exists farm_tasks_owner_idx on farm_tasks (owner_id, "updatedAt");
 
 create table if not exists budgets (
   id text primary key,
@@ -168,10 +176,10 @@ create table if not exists budgets (
   currency text not null default 'PHP',
   month text not null,
   notes text not null default '',
-  createdAt text not null,
-  updatedAt text not null
+  "createdAt" text not null,
+  "updatedAt" text not null
 );
-create index if not exists budgets_owner_idx on budgets (owner_id, updatedAt);
+create index if not exists budgets_owner_idx on budgets (owner_id, "updatedAt");
 
 -- Row Level Security: each user can only read/write their own rows.
 alter table crops enable row level security;
