@@ -36,7 +36,9 @@ function RootNavigator({ ready }: { ready: boolean }) {
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
         }}
+        initialRouteName="index"
       >
+        <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="crop-form" options={{ presentation: 'modal' }} />
         <Stack.Screen name="harvest-form" options={{ presentation: 'modal' }} />
