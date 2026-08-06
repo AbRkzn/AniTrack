@@ -9,6 +9,7 @@ interface AnimalHealthState {
   records: AsyncState<AnimalHealthRecord[]>;
   selectedRecord: AnimalHealthRecord | null;
   fetchRecords: (animalId: string) => Promise<void>;
+  fetchAllRecords: () => Promise<void>;
   getRecordById: (id: string) => Promise<AnimalHealthRecord | null>;
   addRecord: (data: Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>) => Promise<AnimalHealthRecord>;
   updateRecord: (id: string, data: Partial<Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<AnimalHealthRecord>;
@@ -72,6 +73,16 @@ export const useAnimalHealthStore = create<AnimalHealthState>((set, get) => ({
     set((state) => ({ records: { ...state.records, isLoading: true, error: null } }));
     try {
       const data = await repository.getByAnimalId(animalId);
+      set({ records: { data, isLoading: false, error: null } });
+    } catch (error) {
+      set({ records: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch health records' } });
+    }
+  },
+
+  fetchAllRecords: async () => {
+    set((state) => ({ records: { ...state.records, isLoading: true, error: null } }));
+    try {
+      const data = await repository.getAll();
       set({ records: { data, isLoading: false, error: null } });
     } catch (error) {
       set({ records: { data: [], isLoading: false, error: error instanceof Error ? error.message : 'Failed to fetch health records' } });

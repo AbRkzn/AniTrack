@@ -17,12 +17,16 @@ import {
 import { useTaskStore } from '../store/taskStore';
 import { useHarvestsStore } from '../store/harvestsStore';
 import { useCropsStore } from '../store/cropsStore';
+import { useAnimalsStore } from '../store/animalsStore';
+import { useAnimalHealthStore } from '../store/animalHealthStore';
+import { useAnimalProductStore } from '../store/animalProductStore';
 import { Header } from '../components/ui/Header';
 import { Card } from '../components/ui/Card';
 import { Icon, IconName } from '../components/ui/Icon';
 import { typography, spacing, borderRadius, ColorScheme } from '../constants/theme';
 import { useTheme } from '../constants/themeContext';
-import { FarmTask, Harvest, Crop } from '../types';
+import { FarmTask, Harvest, Crop, AnimalHealthRecord, AnimalProduct } from '../types';
+import { getStatusLabel, formatNumber } from '../utils/helpers';
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -30,7 +34,9 @@ type CalendarEvent =
   | { type: 'task'; task: FarmTask }
   | { type: 'harvest'; harvest: Harvest }
   | { type: 'planting'; crop: Crop }
-  | { type: 'expected_harvest'; crop: Crop };
+  | { type: 'expected_harvest'; crop: Crop }
+  | { type: 'health'; record: AnimalHealthRecord }
+  | { type: 'product'; product: AnimalProduct };
 
 function dayKey(date: Date): string {
   return format(date, 'yyyy-MM-dd');
@@ -48,20 +54,31 @@ export default function CalendarScreen() {
   const tasks = useTaskStore((s) => s.tasks.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
   const crops = useCropsStore((s) => s.crops.data);
+  const animals = useAnimalsStore((s) => s.animals.data);
+  const records = useAnimalHealthStore((s) => s.records.data);
+  const products = useAnimalProductStore((s) => s.products.data);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchCrops = useCropsStore((s) => s.fetchCrops);
+  const fetchAnimals = useAnimalsStore((s) => s.fetchAnimals);
+  const fetchAllRecords = useAnimalHealthStore((s) => s.fetchAllRecords);
+  const fetchAllProducts = useAnimalProductStore((s) => s.fetchAllProducts);
   const tasksLoading = useTaskStore((s) => s.tasks.isLoading);
   const harvestsLoading = useHarvestsStore((s) => s.harvests.isLoading);
   const cropsLoading = useCropsStore((s) => s.crops.isLoading);
-  const isLoading = tasksLoading || harvestsLoading || cropsLoading;
+  const recordsLoading = useAnimalHealthStore((s) => s.records.isLoading);
+  const productsLoading = useAnimalProductStore((s) => s.products.isLoading);
+  const isLoading = tasksLoading || harvestsLoading || cropsLoading || recordsLoading || productsLoading;
 
   useFocusEffect(
     useCallback(() => {
       fetchTasks();
       fetchHarvests();
       fetchCrops();
-    }, [fetchTasks, fetchHarvests, fetchCrops])
+      fetchAnimals();
+      fetchAllRecords();
+      fetchAllProducts();
+    }, [fetchTasks, fetchHarvests, fetchCrops, fetchAnimals, fetchAllRecords, fetchAllProducts])
   );
 
   const eventsByDay = useMemo(() => {
@@ -80,8 +97,14 @@ export default function CalendarScreen() {
       if (crop.plantingDate) push(crop.plantingDate, { type: 'planting', crop });
       if (crop.expectedHarvestDate) push(crop.expectedHarvestDate, { type: 'expected_harvest', crop });
     }
+    for (const record of records) {
+      push(record.date, { type: 'health', record });
+    }
+    for (const product of products) {
+      push(product.date, { type: 'product', product });
+    }
     return map;
-  }, [tasks, harvests, crops]);
+  }, [tasks, harvests, crops, records, products]);
 
   const gridDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(viewDate), { weekStartsOn: 0 });
@@ -94,6 +117,13 @@ export default function CalendarScreen() {
 
   const today = new Date();
   const selectedEvents = eventsByDay[selectedDate] || [];
+  const animalNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const animal of animals) {
+      map.set(animal.id, animal.name || animal.tagNumber);
+    }
+    return map;
+  }, [animals]);
 
   const goPrev = () => setViewDate((d) => subMonths(d, 1));
   const goNext = () => setViewDate((d) => addMonths(d, 1));
@@ -110,7 +140,7 @@ export default function CalendarScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={() => { fetchTasks(); fetchHarvests(); fetchCrops(); }} tintColor={colors.primary} colors={[colors.primary]} />
+          <RefreshControl refreshing={isLoading} onRefresh={() => { fetchTasks(); fetchHarvests(); fetchCrops(); fetchAnimals(); fetchAllRecords(); fetchAllProducts(); }} tintColor={colors.primary} colors={[colors.primary]} />
         }
       >
         <Card padding={spacing.md}>
@@ -165,16 +195,18 @@ export default function CalendarScreen() {
                     {dayEvents.slice(0, 3).map((event, index) => (
                       <View
                         key={index}
-                        style={[
-                          styles.dot,
-                          {
-                            backgroundColor:
-                              event.type === 'task' ? colors.chartTeal
-                              : event.type === 'harvest' ? colors.warning
-                              : event.type === 'planting' ? colors.chartBlue
-                              : colors.chartPurple,
-                          },
-                        ]}
+                          style={[
+                            styles.dot,
+                            {
+                              backgroundColor:
+                                event.type === 'task' ? colors.chartTeal
+                                : event.type === 'harvest' ? colors.warning
+                                : event.type === 'planting' ? colors.chartBlue
+                                : event.type === 'expected_harvest' ? colors.chartPurple
+                                : event.type === 'health' ? colors.error
+                                : colors.primary,
+                            },
+                          ]}
                       />
                     ))}
                   </View>
@@ -196,7 +228,7 @@ export default function CalendarScreen() {
           ) : (
             <View>
               {selectedEvents.map((event, index) => (
-                <EventRow key={index} event={event} colors={colors} />
+                <EventRow key={index} event={event} colors={colors} animalNameById={animalNameById} />
               ))}
             </View>
           )}
@@ -206,7 +238,15 @@ export default function CalendarScreen() {
   );
 }
 
-function EventRow({ event, colors }: { event: CalendarEvent; colors: ColorScheme }) {
+function EventRow({
+  event,
+  colors,
+  animalNameById,
+}: {
+  event: CalendarEvent;
+  colors: ColorScheme;
+  animalNameById: Map<string, string>;
+}) {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const meta = ((): { icon: IconName; color: string; title: string; subtitle: string; onPress: () => void } => {
@@ -237,12 +277,32 @@ function EventRow({ event, colors }: { event: CalendarEvent; colors: ColorScheme
         onPress: () => router.push(`/crop-form?id=${event.crop.id}`),
       };
     }
+    if (event.type === 'expected_harvest') {
+      return {
+        icon: 'trending-up-outline',
+        color: colors.chartPurple,
+        title: `Expected harvest: ${event.crop.name}`,
+        subtitle: 'Crop expected harvest',
+        onPress: () => router.push(`/crop-form?id=${event.crop.id}`),
+      };
+    }
+    if (event.type === 'health') {
+      const animalName = animalNameById.get(event.record.animalId) || 'Animal';
+      return {
+        icon: 'medkit-outline',
+        color: colors.error,
+        title: event.record.diagnosis || getStatusLabel(event.record.type),
+        subtitle: `${animalName} · Health · ${getStatusLabel(event.record.type)}`,
+        onPress: () => router.push(`/health-record-form?id=${event.record.id}&animalId=${event.record.animalId}`),
+      };
+    }
+    const animalName = animalNameById.get(event.product.animalId) || 'Animal';
     return {
-      icon: 'trending-up-outline',
-      color: colors.chartPurple,
-      title: `Expected harvest: ${event.crop.name}`,
-      subtitle: 'Crop expected harvest',
-      onPress: () => router.push(`/crop-form?id=${event.crop.id}`),
+      icon: 'egg-outline',
+      color: colors.primary,
+      title: `${formatNumber(event.product.quantity, 1)} ${event.product.unit} ${getStatusLabel(event.product.productType)}`,
+      subtitle: `${animalName} · Product`,
+      onPress: () => router.push(`/animal-product-form?id=${event.product.id}&animalId=${event.product.animalId}`),
     };
   })();
 

@@ -19,7 +19,7 @@ import { WeatherCard } from '../../components/weather/WeatherCard';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
 import { useHarvestReminders } from '../../hooks/useHarvestReminders';
-import { formatCurrency, withAlpha } from '../../utils/helpers';
+import { formatCurrency, formatNumber, getStatusLabel, withAlpha } from '../../utils/helpers';
 
 function QuickAction({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
   const { colors } = useTheme();
@@ -197,7 +197,7 @@ export default function DashboardScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Activities</Text>
-          {crops.length === 0 && expenses.length === 0 && harvests.length === 0 && animals.length === 0 ? (
+          {crops.length === 0 && expenses.length === 0 && harvests.length === 0 && animals.length === 0 && products.length === 0 && tasks.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={[styles.emptyIconTile, { backgroundColor: colors.primaryFaded }]}>
                 <Icon name="reader-outline" size={30} color={colors.primary} />
@@ -240,6 +240,29 @@ export default function DashboardScreen() {
                   <View style={styles.activityContent}>
                     <Text style={styles.activityTitle}>Expense: {formatCurrency(expense.amount, settings.currency)}</Text>
                     <Text style={styles.activitySubtitle}>{expense.category} - {expense.date}</Text>
+                  </View>
+                </View>
+              ))}
+              {products.slice(0, 3).map((product) => (
+                <View key={product.id} style={styles.activityItem}>
+                  <ActivityIcon icon="egg-outline" color={colors.primary} />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>
+                      {formatNumber(product.quantity, 1)} {product.unit} {getStatusLabel(product.productType)}
+                    </Text>
+                    <Text style={styles.activitySubtitle}>
+                      Product - {product.date}
+                      {product.revenue != null && product.revenue > 0 ? ` · ${formatCurrency(product.revenue, settings.currency)}` : ''}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              {tasks.slice(0, 3).map((task) => (
+                <View key={task.id} style={styles.activityItem}>
+                  <ActivityIcon icon="checkmark-done" color={colors.chartTeal} />
+                  <View style={styles.activityContent}>
+                    <Text style={styles.activityTitle}>{task.title}</Text>
+                    <Text style={styles.activitySubtitle}>{getStatusLabel(task.category)} - {task.status.replace(/_/g, ' ')}</Text>
                   </View>
                 </View>
               ))}

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, useWindowDimensions, ActivityIndica
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
+import { format, startOfMonth, subMonths } from 'date-fns';
 import { useCropsStore } from '../store/cropsStore';
 import { useHarvestsStore } from '../store/harvestsStore';
 import { useExpensesStore } from '../store/expensesStore';
@@ -25,6 +26,15 @@ import {
 } from '../utils/reports';
 
 const CHART_HEIGHT = 200;
+
+type DateRangeKey = 'all' | 'month' | 'quarter' | 'year';
+
+const DATE_RANGES: { key: DateRangeKey; label: string }[] = [
+  { key: 'all', label: 'All Time' },
+  { key: 'month', label: 'This Month' },
+  { key: 'quarter', label: 'Last 3 Months' },
+  { key: 'year', label: 'Last 12 Months' },
+];
 
 interface ChartSectionProps {
   title: string;
@@ -85,6 +95,7 @@ export default function ReportsScreen() {
   const fields = useFieldsStore((s) => s.fields.data);
   const fetchFields = useFieldsStore((s) => s.fetchFields);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedRange, setSelectedRange] = useState<DateRangeKey>('all');
 
   const chartConfig = useMemo<NonNullable<ComponentProps<typeof LineChart>['chartConfig']>>(
     () => ({
@@ -115,40 +126,71 @@ export default function ReportsScreen() {
     }, [fetchCrops, fetchHarvests, fetchExpenses, fetchFields, fetchProducts])
   );
 
-  const filtered = useMemo(() => {
-    if (!selectedFieldId) {
-      return { crops, harvests, expenses };
+  const rangeStart = useMemo(() => {
+    const now = new Date();
+    switch (selectedRange) {
+      case 'month':
+        return startOfMonth(now);
+      case 'quarter':
+        return subMonths(now, 3);
+      case 'year':
+        return subMonths(now, 12);
+      default:
+        return null;
     }
-    const fieldCrops = crops.filter((c) => c.fieldId === selectedFieldId);
-    const cropIds = new Set(fieldCrops.map((c) => c.id));
-    return {
-      crops: fieldCrops,
-      harvests: harvests.filter((h) => cropIds.has(h.cropId)),
-      expenses: expenses.filter((e) => e.cropId && cropIds.has(e.cropId)),
-    };
-  }, [selectedFieldId, crops, harvests, expenses]);
+  }, [selectedRange]);
+  const rangeStartKey = rangeStart ? format(rangeStart, 'yyyy-MM-dd') : null;
+
+  const filtered = useMemo(() => {
+    let cropsList = crops;
+    let harvestsList = harvests;
+    let expensesList = expenses;
+    let productsList = products;
+
+    if (rangeStartKey) {
+      cropsList = cropsList.filter(
+        (c) =>
+          (c.actualHarvestDate && c.actualHarvestDate >= rangeStartKey) ||
+          (!c.actualHarvestDate && c.plantingDate >= rangeStartKey)
+      );
+      harvestsList = harvestsList.filter((h) => h.harvestDate >= rangeStartKey);
+      expensesList = expensesList.filter((e) => e.date >= rangeStartKey);
+      productsList = productsList.filter((p) => p.date >= rangeStartKey);
+    }
+
+    if (selectedFieldId) {
+      const fieldCrops = cropsList.filter((c) => c.fieldId === selectedFieldId);
+      const cropIds = new Set(fieldCrops.map((c) => c.id));
+      cropsList = fieldCrops;
+      harvestsList = harvestsList.filter((h) => cropIds.has(h.cropId));
+      expensesList = expensesList.filter((e) => e.cropId && cropIds.has(e.cropId));
+      productsList = [];
+    }
+
+    return { crops: cropsList, harvests: harvestsList, expenses: expensesList, products: productsList };
+  }, [rangeStartKey, selectedFieldId, crops, harvests, expenses, products]);
 
   const totals = useMemo(() => {
     const totalExpenses = filtered.expenses.reduce((sum, e) => sum + e.amount, 0);
     const harvestRevenue = filtered.harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
-    const productRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
+    const productRevenue = filtered.products.reduce((sum, p) => sum + (p.revenue || 0), 0);
     const totalRevenue = harvestRevenue + productRevenue;
     return { totalExpenses, totalRevenue, net: totalRevenue - totalExpenses };
-  }, [filtered, products]);
+  }, [filtered]);
 
   const expenseByCategory = useMemo(() => groupExpensesByCategory(filtered.expenses), [filtered.expenses]);
   const revenueByMonth = useMemo(
-    () => groupRevenueByMonth(filtered.harvests, products),
-    [filtered.harvests, products]
+    () => groupRevenueByMonth(filtered.harvests, filtered.products),
+    [filtered.harvests, filtered.products]
   );
   const expensesByMonth = useMemo(() => groupExpensesByMonth(filtered.expenses), [filtered.expenses]);
   const profitLoss = useMemo(
-    () => groupProfitLossByMonth(filtered.harvests, filtered.expenses, products),
-    [filtered.harvests, filtered.expenses, products]
+    () => groupProfitLossByMonth(filtered.harvests, filtered.expenses, filtered.products),
+    [filtered.harvests, filtered.expenses, filtered.products]
   );
   const yieldData = useMemo(() => yieldComparison(filtered.crops, filtered.harvests), [filtered.crops, filtered.harvests]);
 
-  const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0 || products.length > 0;
+  const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0 || filtered.products.length > 0;
 
   if (loading && !hasData) {
     return (
@@ -178,7 +220,7 @@ export default function ReportsScreen() {
           title="No Reports Yet"
           message={
             selectedFieldId
-              ? 'No crops, harvests, or expenses linked to the selected field yet.'
+              ? 'No crops, harvests, or expenses linked to the selected field yet. Animal products are excluded when a field is selected.'
               : 'Add crops, harvests, expenses, and animal products to unlock analytics like expense breakdowns, revenue trends, and yield comparisons.'
           }
         />
@@ -232,6 +274,28 @@ export default function ReportsScreen() {
             </ScrollView>
           </View>
         )}
+        <View style={styles.filterRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            {DATE_RANGES.map((range) => {
+              const active = selectedRange === range.key;
+              return (
+                <TouchableOpacity
+                  key={range.key}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  onPress={() => setSelectedRange(active ? 'all' : range.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{range.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+        {selectedFieldId && products.length > 0 && (
+          <Text style={styles.productNote}>
+            Animal product revenue is not included when a field is selected, since products aren't linked to fields.
+          </Text>
+        )}
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Revenue"
@@ -256,7 +320,7 @@ export default function ReportsScreen() {
           />
           <StatCard
             title="Harvests"
-            value={harvests.length}
+            value={filtered.harvests.length}
             icon="basket-outline"
             style={styles.statHalf}
           />
@@ -469,6 +533,11 @@ const createStyles = (colors: ColorScheme) =>
     },
     filterChipText: { ...typography.label, color: colors.textSecondary },
     filterChipTextActive: { color: colors.white, fontWeight: '600' },
+    productNote: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing.md,
+    },
     section: { marginBottom: spacing.xl },
     sectionTitle: { ...typography.h4, color: colors.textPrimary, marginBottom: spacing.xs },
     sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.md },

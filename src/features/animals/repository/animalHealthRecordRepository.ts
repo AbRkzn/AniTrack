@@ -38,6 +38,11 @@ export class AnimalHealthRecordRepository {
     return row ? this.mapRowToRecord(row) : null;
   }
 
+  async getAll(): Promise<AnimalHealthRecord[]> {
+    const rows = await queryAll<any>('SELECT * FROM animal_health_records ORDER BY date DESC, createdAt DESC');
+    return rows.map(this.mapRowToRecord);
+  }
+
   async create(data: Omit<AnimalHealthRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<AnimalHealthRecord> {
     const now = new Date().toISOString();
     const id = `health_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
