@@ -73,7 +73,15 @@ const expenseSchema = z.object({
   vendor: z.string(),
   notes: z.string(),
   recurring: z.boolean(),
+  recurringInterval: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional().or(z.literal('')),
 });
+
+const RECURRING_INTERVAL_OPTIONS: { label: string; value: 'daily' | 'weekly' | 'monthly' | 'yearly' }[] = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Yearly', value: 'yearly' },
+];
 
 type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
@@ -111,6 +119,7 @@ export default function ExpenseFormScreen() {
       vendor: '',
       notes: '',
       recurring: false,
+      recurringInterval: '',
     },
   });
 
@@ -145,6 +154,7 @@ export default function ExpenseFormScreen() {
           vendor: expense.vendor ?? '',
           notes: expense.notes ?? '',
           recurring: expense.recurring,
+          recurringInterval: expense.recurringInterval ?? '',
         });
       }
       setLoading(false);
@@ -165,6 +175,7 @@ export default function ExpenseFormScreen() {
         vendor: values.vendor.trim() || undefined,
         notes: values.notes.trim(),
         recurring: values.recurring,
+        recurringInterval: values.recurring ? (values.recurringInterval || 'monthly') : undefined,
       };
       try {
         if (expenseId) await updateExpense(expenseId, payload);
@@ -264,6 +275,16 @@ export default function ExpenseFormScreen() {
               )}
             />
           </View>
+          {watch('recurring') && (
+            <ChipSelect
+              label="Repeat every"
+              options={RECURRING_INTERVAL_OPTIONS}
+              value={watch('recurringInterval') || 'monthly'}
+              onChange={(value) =>
+                setValue('recurringInterval', value as 'daily' | 'weekly' | 'monthly' | 'yearly' | '', { shouldValidate: true })
+              }
+            />
+          )}
           <Button
             title={isEditing ? 'Save Changes' : 'Add Expense'}
             onPress={handleSubmit(onSubmit)}

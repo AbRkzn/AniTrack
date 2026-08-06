@@ -19,6 +19,7 @@ import { WeatherCard } from '../../components/weather/WeatherCard';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
 import { useHarvestReminders } from '../../hooks/useHarvestReminders';
+import { useWeatherAlerts } from '../../hooks/useWeatherAlerts';
 import { formatCurrency, formatNumber, getStatusLabel, withAlpha } from '../../utils/helpers';
 
 function QuickAction({ icon, label, color, onPress }: { icon: IconName; label: string; color: string; onPress: () => void }) {
@@ -51,6 +52,7 @@ export default function DashboardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   useHarvestReminders();
+  useWeatherAlerts();
   const crops = useCropsStore((s) => s.crops.data);
   const expenses = useExpensesStore((s) => s.expenses.data);
   const harvests = useHarvestsStore((s) => s.harvests.data);
@@ -85,8 +87,9 @@ export default function DashboardScreen() {
   const today = new Date().toISOString().split('T')[0];
   const monthKey = format(new Date(), 'yyyy-MM');
   const monthlyExpenses = expenses.filter((e) => e.date.startsWith(monthKey)).reduce((sum, e) => sum + e.amount, 0);
-  const productRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
-  const totalRevenue = harvests.reduce((sum, h) => sum + (h.revenue || 0), 0) + productRevenue;
+  const monthlyHarvestRevenue = harvests.filter((h) => h.harvestDate.startsWith(monthKey)).reduce((sum, h) => sum + (h.revenue || 0), 0);
+  const monthlyProductRevenue = products.filter((p) => p.date.startsWith(monthKey)).reduce((sum, p) => sum + (p.revenue || 0), 0);
+  const monthlyRevenue = monthlyHarvestRevenue + monthlyProductRevenue;
   const activeAnimals = animals.filter((a) => a.status === 'active').length;
   const openTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled').length;
   const overdueTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && t.dueDate < today);
@@ -136,7 +139,7 @@ export default function DashboardScreen() {
           <StatCard title="Open Tasks" value={openTasks} icon="checkmark-done" color={colors.chartTeal} style={styles.statHalf} />
           <StatCard title="Monthly Expenses" value={formatCurrency(monthlyExpenses, settings.currency)} icon="cash-outline" color={colors.error} style={styles.statHalf} />
           <StatCard title="Products Logged" value={products.length} icon="egg-outline" color={colors.warning} style={styles.statHalf} />
-          <StatCard title="Revenue" value={formatCurrency(totalRevenue, settings.currency)} icon="trending-up" color={colors.primary} style={styles.statHalf} />
+          <StatCard title="Monthly Revenue" value={formatCurrency(monthlyRevenue, settings.currency)} icon="trending-up" color={colors.primary} style={styles.statHalf} />
           <StatCard title="Over Budget" value={overBudgetCount} icon="warning-outline" color={overBudgetCount > 0 ? colors.error : colors.success} style={styles.statHalf} />
         </View>
 

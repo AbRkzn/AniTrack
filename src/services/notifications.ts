@@ -1,12 +1,17 @@
 import { Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { parseISO, startOfDay, addDays, addHours, isBefore } from 'date-fns';
-import type { Crop, FarmTask, AppSettings } from '../types';
+import { parseISO, startOfDay, addDays, addHours, isBefore, format } from 'date-fns';
+import type { Crop, FarmTask, AppSettings, WeatherRecord } from '../types';
+import { getWeatherMeta } from '../utils/helpers';
 
 const CHANNEL_ID = 'harvest-reminders';
 const TASK_CHANNEL_ID = 'task-reminders';
+const WEATHER_CHANNEL_ID = 'weather-alerts';
 const REMINDER_TYPE = 'harvest_reminder';
 const TASK_REMINDER_TYPE = 'task_reminder';
+const WEATHER_ALERT_TYPE = 'weather_alert';
+
+const ALERT_CONDITIONS = new Set(['rain', 'drizzle', 'thunderstorm', 'snow']);
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -39,6 +44,12 @@ export async function configureNotifications(): Promise<void> {
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#2196F3',
+    });
+    await Notifications.setNotificationChannelAsync(WEATHER_CHANNEL_ID, {
+      name: 'Weather alerts',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#F9A825',
     });
   }
 }
@@ -183,4 +194,48 @@ export async function syncHarvestReminders(crops: Crop[], settings: AppSettings)
       },
     });
   }
+}
+
+export async function cancelWeatherAlerts(): Promise<void> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const alerts = scheduled.filter((n) => n.content.data?.type === WEATHER_ALERT_TYPE);
+  await Promise.all(alerts.map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+}
+
+export async function syncWeatherAlerts(forecast: WeatherRecord[], pushNotifications: boolean): Promise<void> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
+
+  await configureNotifications();
+  await cancelWeatherAlerts();
+
+  if (!pushNotifications) return;
+
+  const granted = await ensurePermission(Notifications);
+  if (!granted) return;
+
+  const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  const day = forecast.find((f) => f.date === tomorrow);
+  if (!day || !ALERT_CONDITIONS.has(day.conditions)) return;
+
+  const trigger = addHours(startOfDay(parseISO(tomorrow)), 6);
+  if (isBefore(trigger, new Date())) return;
+
+  const label = getWeatherMeta(day.conditions).label;
+  const precipitation = Number.isFinite(day.precipitation) ? day.precipitation : 0;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Weather Alert',
+      body: `${label} expected tomorrow with ${precipitation} mm precipitation. Plan your farm activities accordingly.`,
+      data: { type: WEATHER_ALERT_TYPE, date: tomorrow },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: trigger,
+      channelId: WEATHER_CHANNEL_ID,
+    },
+  });
 }

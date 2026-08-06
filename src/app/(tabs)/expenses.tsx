@@ -98,7 +98,11 @@ export default function ExpensesScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title="Expenses" subtitle={subtitle} />
+      <Header
+        title="Expenses"
+        subtitle={subtitle}
+        rightAction={{ icon: 'repeat-outline', onPress: () => router.push('/recurring-expenses') }}
+      />
       <View style={styles.container}>
         <View style={styles.summaryRow}>
           <StatCard title="Total Expenses" value={formatCurrency(totalExpenses, currency)} icon="cash-outline" color={colors.error} style={styles.summaryCard} />
