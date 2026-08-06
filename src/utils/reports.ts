@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { Crop, Expense, Harvest, ChartDataPoint } from '../types';
+import { Crop, Expense, Harvest, ChartDataPoint, AnimalProduct } from '../types';
 import { getStatusLabel } from './helpers';
 
 const CHART_COLORS = [
@@ -48,12 +48,17 @@ function groupByMonth(points: { date: string; value: number }[]): ChartDataPoint
     }));
 }
 
-export function groupRevenueByMonth(harvests: Harvest[]): ChartDataPoint[] {
-  return groupByMonth(
-    harvests
-      .filter((h) => h.revenue != null)
-      .map((h) => ({ date: h.harvestDate, value: h.revenue as number }))
-  );
+export function groupRevenueByMonth(harvests: Harvest[], products?: AnimalProduct[]): ChartDataPoint[] {
+  const points: { date: string; value: number }[] = harvests
+    .filter((h) => h.revenue != null)
+    .map((h) => ({ date: h.harvestDate, value: h.revenue as number }));
+  if (products) {
+    for (const p of products) {
+      if (p.revenue == null) continue;
+      points.push({ date: p.date, value: p.revenue });
+    }
+  }
+  return groupByMonth(points);
 }
 
 export function groupExpensesByMonth(expenses: Expense[]): ChartDataPoint[] {
@@ -71,7 +76,7 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function groupProfitLossByMonth(harvests: Harvest[], expenses: Expense[]): MonthlyProfitLoss {
+export function groupProfitLossByMonth(harvests: Harvest[], expenses: Expense[], products?: AnimalProduct[]): MonthlyProfitLoss {
   const revenueByMonth = new Map<string, number>();
   const expensesByMonth = new Map<string, number>();
 
@@ -79,6 +84,13 @@ export function groupProfitLossByMonth(harvests: Harvest[], expenses: Expense[])
     if (harvest.revenue == null) continue;
     const key = harvest.harvestDate.slice(0, 7);
     revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + harvest.revenue);
+  }
+  if (products) {
+    for (const product of products) {
+      if (product.revenue == null) continue;
+      const key = product.date.slice(0, 7);
+      revenueByMonth.set(key, (revenueByMonth.get(key) || 0) + product.revenue);
+    }
   }
   for (const expense of expenses) {
     const key = expense.date.slice(0, 7);

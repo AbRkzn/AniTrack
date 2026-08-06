@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { differenceInCalendarMonths } from 'date-fns';
 import { useAnimalsStore } from '../../store/animalsStore';
+import { useAnimalProductStore } from '../../store/animalProductStore';
+import { useAppStore } from '../../store/appStore';
 import { Header } from '../../components/ui/Header';
 import { Card } from '../../components/ui/Card';
 import { StatusBadge } from '../../components/ui/StatusBadge';
@@ -13,7 +15,7 @@ import { Icon } from '../../components/ui/Icon';
 import { PhotoStrip } from '../../components/ui/PhotoStrip';
 import { typography, spacing, ColorScheme } from '../../constants/theme';
 import { useTheme } from '../../constants/themeContext';
-import { formatNumber } from '../../utils/helpers';
+import { formatCurrency, formatNumber } from '../../utils/helpers';
 import { Animal } from '../../types';
 
 function getAgeLabel(birthDate?: string): string {
@@ -28,7 +30,19 @@ function getAgeLabel(birthDate?: string): string {
   return `${months} mo`;
 }
 
-function AnimalCard({ animal, onPress, onLongPress }: { animal: Animal; onPress: () => void; onLongPress: () => void }) {
+function AnimalCard({
+  animal,
+  currency,
+  summary,
+  onPress,
+  onLongPress,
+}: {
+  animal: Animal;
+  currency: string;
+  summary?: { revenue: number; count: number };
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const displayName = animal.name || animal.tagNumber;
@@ -61,6 +75,15 @@ function AnimalCard({ animal, onPress, onLongPress }: { animal: Animal; onPress:
         )}
         {ageLabel !== '' && <Text style={styles.animalDetail}>Age: {ageLabel}</Text>}
       </View>
+      {summary && summary.count > 0 && (
+        <View style={styles.productSummary}>
+          <Icon name="egg-outline" size={14} color={colors.primary} />
+          <Text style={styles.productSummaryText}>
+            Production: {formatCurrency(summary.revenue, currency)} · {summary.count}{' '}
+            {summary.count === 1 ? 'product' : 'products'}
+          </Text>
+        </View>
+      )}
       <PhotoStrip photos={animal.photos} />
     </Card>
   );
@@ -74,13 +97,28 @@ export default function AnimalsScreen() {
   const error = useAnimalsStore((s) => s.animals.error);
   const fetchAnimals = useAnimalsStore((s) => s.fetchAnimals);
   const deleteAnimal = useAnimalsStore((s) => s.deleteAnimal);
+  const products = useAnimalProductStore((s) => s.products.data);
+  const fetchAllProducts = useAnimalProductStore((s) => s.fetchAllProducts);
+  const currency = useAppStore((s) => s.settings.currency);
   const activeCount = animals.filter((a) => a.status === 'active').length;
   const subtitle = `${animals.length} total · ${activeCount} active`;
+
+  const productSummary = useMemo(() => {
+    const map = new Map<string, { revenue: number; count: number }>();
+    for (const p of products) {
+      const entry = map.get(p.animalId) ?? { revenue: 0, count: 0 };
+      entry.revenue += p.revenue || 0;
+      entry.count += 1;
+      map.set(p.animalId, entry);
+    }
+    return map;
+  }, [products]);
 
   useFocusEffect(
     useCallback(() => {
       fetchAnimals();
-    }, [fetchAnimals])
+      fetchAllProducts();
+    }, [fetchAnimals, fetchAllProducts])
   );
 
   const confirmDelete = useCallback(
@@ -121,6 +159,8 @@ export default function AnimalsScreen() {
             renderItem={({ item }) => (
               <AnimalCard
                 animal={item}
+                currency={currency}
+                summary={productSummary.get(item.id)}
                 onPress={() => router.push(`/animal-detail?id=${item.id}`)}
                 onLongPress={() => confirmDelete(item)}
               />
@@ -163,6 +203,18 @@ const createStyles = (colors: ColorScheme) =>
     animalTag: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
     animalDetails: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.sm },
     animalDetail: { ...typography.bodySmall, color: colors.textSecondary },
+    productSummary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.primaryFaded,
+      borderRadius: 8,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      marginBottom: spacing.sm,
+      alignSelf: 'flex-start',
+    },
+    productSummaryText: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' },
     errorText: {
       ...typography.caption,
       color: colors.error,

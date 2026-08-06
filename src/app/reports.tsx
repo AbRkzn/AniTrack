@@ -7,6 +7,7 @@ import { useCropsStore } from '../store/cropsStore';
 import { useHarvestsStore } from '../store/harvestsStore';
 import { useExpensesStore } from '../store/expensesStore';
 import { useFieldsStore } from '../store/fieldsStore';
+import { useAnimalProductStore } from '../store/animalProductStore';
 import { useAppStore } from '../store/appStore';
 import { Header } from '../components/ui/Header';
 import { Card, StatCard } from '../components/ui/Card';
@@ -73,10 +74,12 @@ export default function ReportsScreen() {
   const cropsState = useCropsStore((s) => s.crops);
   const harvestsState = useHarvestsStore((s) => s.harvests);
   const expensesState = useExpensesStore((s) => s.expenses);
+  const productsState = useAnimalProductStore((s) => s.products);
   const crops = cropsState.data;
   const harvests = harvestsState.data;
   const expenses = expensesState.data;
-  const loading = cropsState.isLoading || harvestsState.isLoading || expensesState.isLoading;
+  const products = productsState.data;
+  const loading = cropsState.isLoading || harvestsState.isLoading || expensesState.isLoading || productsState.isLoading;
   const settings = useAppStore((s) => s.settings);
   const currencySymbol = getCurrencySymbol(settings.currency);
   const fields = useFieldsStore((s) => s.fields.data);
@@ -100,6 +103,7 @@ export default function ReportsScreen() {
   const fetchCrops = useCropsStore((s) => s.fetchCrops);
   const fetchHarvests = useHarvestsStore((s) => s.fetchHarvests);
   const fetchExpenses = useExpensesStore((s) => s.fetchExpenses);
+  const fetchProducts = useAnimalProductStore((s) => s.fetchAllProducts);
 
   useFocusEffect(
     useCallback(() => {
@@ -107,7 +111,8 @@ export default function ReportsScreen() {
       fetchHarvests();
       fetchExpenses();
       fetchFields();
-    }, [fetchCrops, fetchHarvests, fetchExpenses, fetchFields])
+      fetchProducts();
+    }, [fetchCrops, fetchHarvests, fetchExpenses, fetchFields, fetchProducts])
   );
 
   const filtered = useMemo(() => {
@@ -125,17 +130,25 @@ export default function ReportsScreen() {
 
   const totals = useMemo(() => {
     const totalExpenses = filtered.expenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalRevenue = filtered.harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
+    const harvestRevenue = filtered.harvests.reduce((sum, h) => sum + (h.revenue || 0), 0);
+    const productRevenue = products.reduce((sum, p) => sum + (p.revenue || 0), 0);
+    const totalRevenue = harvestRevenue + productRevenue;
     return { totalExpenses, totalRevenue, net: totalRevenue - totalExpenses };
-  }, [filtered]);
+  }, [filtered, products]);
 
   const expenseByCategory = useMemo(() => groupExpensesByCategory(filtered.expenses), [filtered.expenses]);
-  const revenueByMonth = useMemo(() => groupRevenueByMonth(filtered.harvests), [filtered.harvests]);
+  const revenueByMonth = useMemo(
+    () => groupRevenueByMonth(filtered.harvests, products),
+    [filtered.harvests, products]
+  );
   const expensesByMonth = useMemo(() => groupExpensesByMonth(filtered.expenses), [filtered.expenses]);
-  const profitLoss = useMemo(() => groupProfitLossByMonth(filtered.harvests, filtered.expenses), [filtered.harvests, filtered.expenses]);
+  const profitLoss = useMemo(
+    () => groupProfitLossByMonth(filtered.harvests, filtered.expenses, products),
+    [filtered.harvests, filtered.expenses, products]
+  );
   const yieldData = useMemo(() => yieldComparison(filtered.crops, filtered.harvests), [filtered.crops, filtered.harvests]);
 
-  const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0;
+  const hasData = filtered.crops.length > 0 || filtered.harvests.length > 0 || filtered.expenses.length > 0 || products.length > 0;
 
   if (loading && !hasData) {
     return (
@@ -166,7 +179,7 @@ export default function ReportsScreen() {
           message={
             selectedFieldId
               ? 'No crops, harvests, or expenses linked to the selected field yet.'
-              : 'Add crops, harvests, and expenses to unlock analytics like expense breakdowns, revenue trends, and yield comparisons.'
+              : 'Add crops, harvests, expenses, and animal products to unlock analytics like expense breakdowns, revenue trends, and yield comparisons.'
           }
         />
       </SafeAreaView>
@@ -309,7 +322,7 @@ export default function ReportsScreen() {
 
         <ChartSection
           title="Revenue Over Time"
-          subtitle={`Monthly harvest revenue (${currencySymbol})`}
+          subtitle={`Monthly revenue (${currencySymbol})`}
         >
           {revenueByMonth.length > 0 ? (
             <LineChart
@@ -330,7 +343,7 @@ export default function ReportsScreen() {
               yAxisSuffix={currencySymbol}
             />
           ) : (
-            <ChartEmpty message="No harvest revenue recorded yet." />
+            <ChartEmpty message="No revenue recorded yet." />
           )}
         </ChartSection>
 
